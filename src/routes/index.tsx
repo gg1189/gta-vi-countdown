@@ -3,7 +3,10 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from
 import { ChevronDown, ListMusic, Maximize2, Pause, Play, Shuffle, SkipBack, SkipForward, X } from "lucide-react";
 import { midnightInZone, pad, splitRemaining } from "@/lib/launch-target";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/")({
+  loader: () => ({ start: Math.floor(Math.random() * TRACKS.length) }),
+  component: Home,
+});
 
 const TARGET = midnightInZone("Asia/Hong_Kong");
 const TRAILER = "/media/bg.mp4";
@@ -58,6 +61,7 @@ const SHOTS = [
 ];
 
 function Home() {
+  const { start } = Route.useLoaderData();
   const [now, setNow] = useState<number | null>(null);
   const [still, setStill] = useState(0);
   const [clip, setClip] = useState<string | null>(null);
@@ -212,7 +216,7 @@ function Home() {
         <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 px-3 py-3 sm:px-6">
           <img src="/logo-vi.png" alt="VI" className="h-8 w-auto" />
           <div className="ml-auto w-[min(24rem,calc(100%-2.75rem))]">
-            <AlbumRadio />
+            <AlbumRadio start={start} />
           </div>
         </header>
 
@@ -352,14 +356,13 @@ type ScWidget = {
   isPaused: (callback: (paused: boolean) => void) => void;
 };
 
-function AlbumRadio() {
+function AlbumRadio({ start }: { start: number }) {
   const hostRef = useRef<HTMLIFrameElement>(null);
   const widgetRef = useRef<ScWidget | null>(null);
-  const indexRef = useRef(0);
+  const indexRef = useRef(start);
   const historyRef = useRef<number[]>([]);
   const startedRef = useRef(false);
-  const jumpedRef = useRef(false);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(start);
   const [playing, setPlaying] = useState(false);
   const [open, setOpen] = useState(false);
   const [hover, setHover] = useState(false);
@@ -370,12 +373,6 @@ function AlbumRadio() {
   const durationRef = useRef(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const track = TRACKS[index] ?? TRACKS[0];
-
-  useEffect(() => {
-    const start = Math.floor(Math.random() * TRACKS.length);
-    indexRef.current = start;
-    setIndex(start);
-  }, []);
 
   useEffect(() => {
     const unlock = () => {
@@ -422,10 +419,6 @@ function AlbumRadio() {
           durationRef.current = ms;
           setDuration(ms);
         });
-        if (jumpedRef.current) return;
-        jumpedRef.current = true;
-        const start = indexRef.current;
-        if (start !== 0) widget.skip(start);
       });
       widget.bind("playProgress", (data) => {
         const apply = (pos: number) => setProgress((prev) => (Math.abs(prev - pos) < 200 ? prev : pos));
@@ -543,7 +536,7 @@ function AlbumRadio() {
           ref={hostRef}
           title="GTA VI The Album"
           className="h-20 w-40 border-0"
-          src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
+          src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&start_track=${start}&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
           allow="autoplay"
         />
       </div>
