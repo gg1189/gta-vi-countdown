@@ -173,9 +173,9 @@ function Home() {
       <section className="relative z-10 min-h-dvh overflow-hidden">
         <div className="scrim pointer-events-none absolute inset-0" />
 
-        <header className="absolute inset-x-0 top-0 z-30 flex items-center gap-2 px-3 py-2 sm:px-6">
+        <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 px-3 py-3 sm:px-6">
           <p className="font-display text-4xl leading-none text-sand">VI</p>
-          <div className="min-w-0 flex-1">
+          <div className="w-[min(22rem,calc(100%-3.25rem))]">
             <AlbumRadio />
           </div>
         </header>
@@ -438,7 +438,7 @@ function AlbumRadio() {
 
   return (
     <div ref={rootRef} className="relative min-w-0">
-      <div className="yt-hide glass relative overflow-hidden rounded-card">
+      <div className="yt-hide glass relative overflow-hidden rounded-full">
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
           <div ref={hostRef} />
         </div>
@@ -480,7 +480,7 @@ function AlbumRadio() {
         </div>
       </div>
       {open ? (
-        <ul id="album-list" className="glass absolute inset-x-0 top-full z-40 mt-2 max-h-72 overflow-y-auto rounded-card p-1">
+        <ul id="album-list" className="glass absolute inset-x-0 top-full z-40 mt-2 max-h-72 overflow-y-auto rounded-2xl p-1">
           {ALBUM.map((song, songIndex) => {
             const current = songIndex === index;
             return (
