@@ -62,18 +62,18 @@ function Home() {
         : remaining.days * 86400 + remaining.hours * 3600 + remaining.minutes * 60 + remaining.seconds;
   const copy =
     secondsLeft == null
-      ? { title: "今晚開場", sub: "" }
+      ? { title: "今晚開波", sub: "" }
       : secondsLeft <= 0
-        ? { title: "已經開場", sub: "歡迎來到里昂尼達" }
+        ? { title: "開波喇", sub: "歡迎來到里昂尼達" }
         : secondsLeft <= 10
-          ? { title: "開場在即", sub: "最後十秒" }
+          ? { title: "就嚟開波", sub: "最後十秒" }
           : secondsLeft <= 60
-            ? { title: "最後一分鐘", sub: "準備開場" }
+            ? { title: "最後一分鐘", sub: "準備開波" }
             : secondsLeft <= 600
-              ? { title: "就快開場", sub: "倒數十分鐘" }
+              ? { title: "就快開波", sub: "倒數十分鐘" }
               : secondsLeft <= 3600
-                ? { title: "今晚開場", sub: "還有一小時" }
-                : { title: "今晚開場", sub: "" };
+                ? { title: "今晚開波", sub: "仲有一小時" }
+                : { title: "今晚開波", sub: "" };
   const fireworkLevel = secondsLeft == null || secondsLeft > 60 ? 0 : secondsLeft === 0 ? 3 : secondsLeft <= 10 ? 2 : 1;
   const live = secondsLeft === 0;
   const hours = remaining ? remaining.days * 24 + remaining.hours : null;
@@ -212,7 +212,7 @@ function Home() {
             </div>
           )}
 
-          <p className="mt-5 text-xs font-semibold tracking-widest text-muted">香港時間 · 11月19日 午夜</p>
+          <p className="mt-5 text-xs font-semibold tracking-widest text-muted">香港時間 · 11月19日 00:00</p>
         </div>
 
         <div className="absolute inset-x-0 bottom-0 z-20 flex gap-2 overflow-x-auto px-4 pb-4">
