@@ -269,6 +269,31 @@
   margin-inline: auto;
 }
 
+.vol {
+  height: 4px;
+  appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-sunset) var(--p), rgb(255 255 255 / 0.28) var(--p));
+  cursor: pointer;
+}
+
+.vol::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--color-sand);
+  box-shadow: 0 0 0 3px rgb(255 107 61 / 0.28);
+}
+
+.vol::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-sand);
+}
+
 .plate {
   position: relative;
   overflow: hidden;

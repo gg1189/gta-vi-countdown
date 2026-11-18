@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from "react";
-import { ChevronDown, ListMusic, Maximize2, Pause, Play, Shuffle, SkipBack, SkipForward, X } from "lucide-react";
+import { ChevronDown, ListMusic, Maximize2, Pause, Play, Shuffle, SkipBack, SkipForward, Volume1, Volume2, VolumeX, X } from "lucide-react";
 import { midnightInZone, pad, splitRemaining } from "@/lib/launch-target";
 
 export const Route = createFileRoute("/")({
@@ -380,15 +380,28 @@ function AlbumRadio({ start, hostRef }: { start: number; hostRef: RefObject<HTML
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const durationRef = useRef(0);
+  const volumeRef = useRef(100);
+  const levelRef = useRef(100);
   const rootRef = useRef<HTMLDivElement>(null);
+  const [volume, setVolume] = useState(100);
   const track = TRACKS[index] ?? TRACKS[0];
+
+  useEffect(() => {
+    const saved = Number(localStorage.getItem("gta-vol"));
+    if (!Number.isFinite(saved)) return;
+    const next = Math.min(100, Math.max(0, Math.round(saved)));
+    volumeRef.current = next;
+    levelRef.current = next || 100;
+    setVolume(next);
+    widgetRef.current?.setVolume(next);
+  }, []);
 
   useEffect(() => {
     const unlock = (event: PointerEvent) => {
       if (event.target instanceof Element && event.target.closest("[data-playback]")) return;
       const widget = widgetRef.current;
       if (!widget || playingRef.current || pausedByUser.current) return;
-      widget.setVolume(100);
+      widget.setVolume(volumeRef.current);
       widget.play();
     };
     window.addEventListener("pointerdown", unlock, true);
@@ -419,7 +432,7 @@ function AlbumRadio({ start, hostRef }: { start: number; hostRef: RefObject<HTML
         setReady(true);
         const kick = () => {
           if (dead || pausedByUser.current || playingRef.current) return;
-          widget.setVolume(100);
+          widget.setVolume(volumeRef.current);
           widget.isPaused((paused) => {
             if (dead || pausedByUser.current || playingRef.current || !paused) return;
             widget.play();
@@ -486,7 +499,7 @@ function AlbumRadio({ start, hostRef }: { start: number; hostRef: RefObject<HTML
       return;
     }
     pausedByUser.current = false;
-    widget.setVolume(100);
+    widget.setVolume(volumeRef.current);
     widget.play();
   };
 
@@ -499,7 +512,7 @@ function AlbumRadio({ start, hostRef }: { start: number; hostRef: RefObject<HTML
     const widget = widgetRef.current;
     if (!widget) return;
     startedRef.current = true;
-    widget.setVolume(100);
+    widget.setVolume(volumeRef.current);
     widget.skip(next);
     widget.play();
     setPlaying(true);
@@ -516,6 +529,15 @@ function AlbumRadio({ start, hostRef }: { start: number; hostRef: RefObject<HTML
   };
 
   const shuffle = () => playAt(pickOther(indexRef.current, TRACKS.length));
+
+  const pushVolume = (value: number) => {
+    const next = Math.min(100, Math.max(0, Math.round(value)));
+    volumeRef.current = next;
+    if (next > 0) levelRef.current = next;
+    setVolume(next);
+    widgetRef.current?.setVolume(next);
+    localStorage.setItem("gta-vol", String(next));
+  };
 
   const seek = (event: MouseEvent<HTMLButtonElement>) => {
     const widget = widgetRef.current;
@@ -607,11 +629,11 @@ function AlbumRadio({ start, hostRef }: { start: number; hostRef: RefObject<HTML
               </button>
               <span className="w-8 shrink-0 text-right text-[10px] tabular-nums text-muted">{fmt(duration)}</span>
             </div>
-            <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center px-2 pt-0.5 pb-2">
-              <button type="button" className="inline-flex size-10 items-center justify-center justify-self-start rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={shuffle} aria-label="隨機" disabled={!ready}>
+            <div className="flex items-center gap-1 px-2 pt-0.5 pb-2">
+              <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={shuffle} aria-label="隨機" disabled={!ready}>
                 <Shuffle className="size-4" aria-hidden="true" />
               </button>
-              <div className="flex items-center justify-center gap-1">
+              <div className="flex flex-1 items-center justify-center gap-1">
                 <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(-1)} aria-label="上一首" disabled={!ready}>
                   <SkipBack className="size-4" aria-hidden="true" />
                 </button>
@@ -629,7 +651,28 @@ function AlbumRadio({ start, hostRef }: { start: number; hostRef: RefObject<HTML
                   <SkipForward className="size-4" aria-hidden="true" />
                 </button>
               </div>
-              <span aria-hidden="true" />
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  className="inline-flex size-8 items-center justify-center rounded-full text-sand hover:text-sunset"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={() => pushVolume(volume === 0 ? levelRef.current || 80 : 0)}
+                  aria-label={volume === 0 ? "取消靜音" : "靜音"}
+                >
+                  {volume === 0 ? <VolumeX className="size-4" aria-hidden="true" /> : volume < 45 ? <Volume1 className="size-4" aria-hidden="true" /> : <Volume2 className="size-4" aria-hidden="true" />}
+                </button>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={volume}
+                  aria-label="音量"
+                  className="vol w-14"
+                  style={{ "--p": `${volume}%` } as CSSProperties}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onChange={(event) => pushVolume(Number(event.target.value))}
+                />
+              </div>
             </div>
           </div>
         </div>
