@@ -325,9 +325,14 @@
   filter: blur(6px);
 }
 
-.song-menu.glass::before,
-.song-menu.glass::after {
-  content: none;
+.sc-hide {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 160px;
+  height: 80px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .colon {

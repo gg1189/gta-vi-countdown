@@ -14,6 +14,18 @@ const TRAILERS = [
 ];
 
 const PLAYLIST = "https://soundcloud.com/atlanticrecords/sets/gtavithealbum";
+const TRACKS: Track[] = [
+  { id: "thats-it", title: "That's It", artist: "Yung Lean" },
+  { id: "rhyno", title: "RHYNO", artist: "Travis Scott" },
+  { id: "sexy-magic", title: "Sexy Magic", artist: "CA7RIEL & Paco Amoroso" },
+  { id: "flower", title: "Flower In A Hurricane", artist: "Justice" },
+  { id: "last-thing", title: "Last Thing You Need", artist: "Morgan Wallen" },
+  { id: "suzuki", title: "Suzuki", artist: "Fuerza Regida" },
+  { id: "macacoa", title: "Macacoa 2000", artist: "Rauw Alejandro" },
+  { id: "dont-chart", title: "Don't Chart", artist: "Cardi B" },
+  { id: "blood", title: "Blood in Your Eyes", artist: "Tove Lo" },
+  { id: "bright-lights", title: "Bright Lights, Big City", artist: "Keith Richards" },
+];
 
 function pickOther(current: number, count: number) {
   if (count < 2) return 0;
@@ -282,32 +294,28 @@ function Home() {
 
 type Track = { id: string; title: string; artist: string };
 
-type ScSound = { id?: number; title?: string; user?: { username?: string } };
-
 type ScWidget = {
   bind: (event: string, listener: () => void) => void;
   play: () => void;
   pause: () => void;
   skip: (index: number) => void;
   setVolume: (volume: number) => void;
-  getSounds: (callback: (sounds: ScSound[]) => void) => void;
   isPaused: (callback: (paused: boolean) => void) => void;
 };
 
 function AlbumRadio() {
   const hostRef = useRef<HTMLIFrameElement>(null);
   const widgetRef = useRef<ScWidget | null>(null);
-  const indexRef = useRef(0);
-  const tracksRef = useRef<Track[]>([]);
+  const indexRef = useRef(Math.floor(Math.random() * TRACKS.length));
   const historyRef = useRef<number[]>([]);
   const startedRef = useRef(false);
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [index, setIndex] = useState(0);
+  const jumpedRef = useRef(false);
+  const [index, setIndex] = useState(indexRef.current);
   const [playing, setPlaying] = useState(false);
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const track = tracks[index];
+  const track = TRACKS[index] ?? TRACKS[0];
 
   useEffect(() => {
     const unlock = () => {
@@ -332,6 +340,7 @@ function AlbumRadio() {
 
   useEffect(() => {
     let dead = false;
+    let retry = 0;
     const win = window as Window & { SC?: { Widget: (el: HTMLIFrameElement) => ScWidget } };
 
     const mount = () => {
@@ -339,30 +348,22 @@ function AlbumRadio() {
       const widget = win.SC.Widget(hostRef.current);
       widgetRef.current = widget;
       widget.bind("ready", () => {
-        widget.getSounds((sounds) => {
-          if (dead) return;
-          const list = sounds.map((sound, soundIndex) => ({
-            id: String(sound.id ?? soundIndex),
-            title: sound.title || "Untitled",
-            artist: sound.user?.username ?? "",
-          }));
-          tracksRef.current = list;
-          setTracks(list);
-          setReady(list.length > 0);
-          if (list.length === 0) return;
-          const start = Math.floor(Math.random() * list.length);
-          indexRef.current = start;
-          setIndex(start);
-          widget.setVolume(100);
-          widget.skip(start);
-          widget.play();
-        });
+        if (dead) return;
+        setReady(true);
+        widget.setVolume(100);
+        widget.play();
       });
-      widget.bind("play", () => setPlaying(true));
+      widget.bind("play", () => {
+        window.clearInterval(retry);
+        setPlaying(true);
+        if (jumpedRef.current) return;
+        jumpedRef.current = true;
+        const start = indexRef.current;
+        if (start !== 0) widget.skip(start);
+      });
       widget.bind("pause", () => setPlaying(false));
       widget.bind("finish", () => {
-        const count = tracksRef.current.length;
-        const next = pickOther(indexRef.current, count);
+        const next = pickOther(indexRef.current, TRACKS.length);
         if (next !== indexRef.current) historyRef.current.push(indexRef.current);
         indexRef.current = next;
         setIndex(next);
@@ -373,17 +374,27 @@ function AlbumRadio() {
 
     if (win.SC?.Widget) {
       mount();
-      return () => {
-        dead = true;
-      };
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://w.soundcloud.com/player/api.js";
+      script.onload = () => mount();
+      document.head.appendChild(script);
     }
-
-    const script = document.createElement("script");
-    script.src = "https://w.soundcloud.com/player/api.js";
-    script.onload = () => mount();
-    document.head.appendChild(script);
+    const retryId = window.setInterval(() => {
+      if (dead) return;
+      const widget = widgetRef.current;
+      if (!widget) {
+        mount();
+        return;
+      }
+      widget.play();
+    }, 800);
+    retry = retryId;
+    const stop = window.setTimeout(() => window.clearInterval(retry), 5000);
     return () => {
       dead = true;
+      window.clearInterval(retry);
+      window.clearTimeout(stop);
     };
   }, []);
 
@@ -418,7 +429,7 @@ function AlbumRadio() {
   };
 
   const step = (delta: number) => {
-    const count = tracksRef.current.length;
+    const count = TRACKS.length;
     const next =
       delta < 0 && historyRef.current.length > 0
         ? historyRef.current.pop() ?? pickOther(indexRef.current, count)
@@ -428,15 +439,14 @@ function AlbumRadio() {
 
   return (
     <div ref={rootRef} className="relative min-w-0">
-      <div className="yt-hide glass relative overflow-hidden rounded-full">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-          <iframe
-            ref={hostRef}
-            title={track?.title ?? "GTA VI The Album"}
-            src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
-            allow="autoplay"
-          />
-        </div>
+      <iframe
+        ref={hostRef}
+        className="sc-hide"
+        title="GTA VI The Album"
+        src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
+        allow="autoplay"
+      />
+      <div className="glass relative overflow-hidden rounded-full">
         <div className="relative z-10 flex items-center gap-1 px-1.5 py-1">
           <button
             type="button"
@@ -483,7 +493,7 @@ function AlbumRadio() {
       </div>
       {open ? (
         <ul id="album-list" className="glass song-menu absolute inset-x-0 top-full z-40 mt-2 max-h-72 overflow-y-auto rounded-2xl p-1">
-          {tracks.map((song, songIndex) => {
+          {TRACKS.map((song, songIndex) => {
             const current = songIndex === index;
             return (
               <li key={song.id}>
