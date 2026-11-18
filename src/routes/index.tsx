@@ -201,7 +201,7 @@ function Home() {
           {live ? (
             <p className="digit-pop time-num mt-8 font-display text-7xl leading-none sm:text-8xl">VI</p>
           ) : (
-            <div className="mt-8 w-full max-w-3xl">
+            <div className="mt-8">
               <div className="clock" aria-live="off">
                 <Unit value={hours === null ? "--" : pad(hours)} label="時" />
                 <Colon on={now !== null} />
@@ -501,12 +501,12 @@ function StillFrame({
 function Unit({ value, label }: { value: string; label: string }) {
   return (
     <div className="min-w-0">
-      <div className="plate glass px-1 py-4 sm:py-6">
-        <span key={value} className="digit-pop time-num relative z-10 block font-display text-6xl leading-none sm:text-8xl">
+      <div className="plate glass px-1 py-2 sm:py-2.5">
+        <span key={value} className="digit-pop time-num relative z-10 block font-display text-5xl leading-none sm:text-6xl">
           {value}
         </span>
       </div>
-      <p className="mt-3 text-xs font-semibold tracking-widest text-muted">{label}</p>
+      <p className="mt-2 text-xs font-semibold tracking-widest text-muted">{label}</p>
     </div>
   );
 }
