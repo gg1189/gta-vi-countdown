@@ -552,12 +552,7 @@ function AlbumRadio() {
           <img src={track.art} alt="" className="size-9 shrink-0 rounded-lg object-cover" />
           <div className="min-w-0 flex-1 text-left">
             <Marquee text={track.title} />
-            {expanded ? (
-              <p className="flex items-baseline justify-between gap-2 text-[11px] text-muted">
-                <span className="truncate">{track.artist}</span>
-                <span className="shrink-0 tabular-nums">{fmt(progress)} / {fmt(duration)}</span>
-              </p>
-            ) : null}
+            {expanded ? <p className="truncate text-[11px] text-muted">{track.artist}</p> : null}
           </div>
           <span className={playing ? "eq shrink-0" : "eq shrink-0 opacity-30"} aria-hidden="true">
             <i />
@@ -569,9 +564,10 @@ function AlbumRadio() {
             className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset"
             onPointerDown={(event) => {
               event.stopPropagation();
-              if (pinned) {
+              if (expanded) {
                 setPinned(false);
                 setHover(false);
+                setOpen(false);
                 return;
               }
               setPinned(true);
@@ -595,29 +591,38 @@ function AlbumRadio() {
         </div>
         <div className={`grid transition-[grid-template-rows] duration-300 ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
           <div className="overflow-hidden">
-            <div className="relative z-10 flex items-center justify-center gap-1 px-2">
-              <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={shuffle} aria-label="隨機" disabled={!ready}>
+            <div className="flex items-center gap-2 px-3 pt-0.5 text-[10px] tabular-nums text-muted">
+              <span>{fmt(progress)}</span>
+              <button type="button" className="relative h-4 min-w-0 flex-1" onClick={seek} aria-label="播放進度">
+                <span className="absolute top-1/2 h-1 w-full -translate-y-1/2 rounded-full bg-white/15" />
+                <span className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-sunset" style={{ width: `${ratio}%` }} />
+                <span className="absolute top-1/2 size-2.5 -translate-y-1/2 rounded-full bg-sand shadow" style={{ left: `clamp(0px, calc(${ratio}% - 5px), calc(100% - 10px))` }} />
+              </button>
+              <span>{fmt(duration)}</span>
+            </div>
+            <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center px-2 pt-0.5 pb-2">
+              <button type="button" className="inline-flex size-10 items-center justify-center justify-self-start rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={shuffle} aria-label="隨機" disabled={!ready}>
                 <Shuffle className="size-4" aria-hidden="true" />
               </button>
-              <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(-1)} aria-label="上一首" disabled={!ready}>
-                <SkipBack className="size-4" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="inline-flex size-12 items-center justify-center rounded-full bg-sunset text-ink disabled:opacity-40"
-                onClick={toggle}
-                disabled={!ready}
-                aria-label={playing ? "暫停" : "播放"}
-              >
-                {playing ? <Pause className="size-5" aria-hidden="true" /> : <Play className="size-5" aria-hidden="true" />}
-              </button>
-              <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(1)} aria-label="下一首" disabled={!ready}>
-                <SkipForward className="size-4" aria-hidden="true" />
-              </button>
+              <div className="flex items-center justify-center gap-1">
+                <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(-1)} aria-label="上一首" disabled={!ready}>
+                  <SkipBack className="size-4" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex size-12 items-center justify-center rounded-full bg-sunset text-ink shadow-[0_8px_20px_rgb(255_107_61_/_0.35)] disabled:opacity-40"
+                  onClick={toggle}
+                  disabled={!ready}
+                  aria-label={playing ? "暫停" : "播放"}
+                >
+                  {playing ? <Pause className="size-5" aria-hidden="true" /> : <Play className="size-5 translate-x-px" aria-hidden="true" />}
+                </button>
+                <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(1)} aria-label="下一首" disabled={!ready}>
+                  <SkipForward className="size-4" aria-hidden="true" />
+                </button>
+              </div>
+              <span aria-hidden="true" />
             </div>
-            <button type="button" className="relative z-10 mx-3 mt-1 mb-2 block h-1 w-[calc(100%-1.5rem)] rounded-full bg-white/15" onClick={seek} aria-label="播放進度">
-              <span className="absolute inset-y-0 left-0 rounded-full bg-sunset" style={{ width: `${ratio}%` }} />
-            </button>
           </div>
         </div>
       </div>
