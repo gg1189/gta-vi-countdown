@@ -177,7 +177,7 @@ function Home() {
         <div className="scrim pointer-events-none absolute inset-0" />
 
         <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 px-3 py-3 sm:px-6">
-          <p className="font-display text-4xl leading-none text-sand">VI</p>
+          <img src="/logo-vi.png" alt="VI" className="h-12 w-auto sm:h-14" />
           <div className="w-[min(22rem,calc(100%-3.25rem))]">
             <AlbumRadio />
           </div>
@@ -300,6 +300,8 @@ type YtPlayer = {
   unMute: () => void;
   loadVideoById: (id: string) => void;
   getPlayerState: () => number;
+  setPlaybackQuality?: (quality: string) => void;
+  setPlaybackQualityRange?: (min: string, max: string) => void;
 };
 
 function AlbumRadio() {
@@ -351,6 +353,8 @@ function AlbumRadio() {
         events: {
           onReady: (event: { target: YtPlayer }) => {
             setReady(true);
+            event.target.setPlaybackQualityRange?.("tiny", "tiny");
+            event.target.setPlaybackQuality?.("tiny");
             event.target.unMute();
             event.target.playVideo();
             window.setTimeout(() => {
@@ -372,6 +376,7 @@ function AlbumRadio() {
               return;
             }
             setPlaying(event.data === 1 || event.data === 3);
+            if (event.data === 1) playerRef.current?.setPlaybackQualityRange?.("tiny", "tiny");
           },
         },
       });
@@ -436,7 +441,7 @@ function AlbumRadio() {
           <iframe
             ref={hostRef}
             title={track.title}
-            src={`https://www.youtube.com/embed/${initialId}?autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&enablejsapi=1`}
+            src={`https://www.youtube.com/embed/${initialId}?autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&enablejsapi=1&vq=tiny`}
             allow="autoplay; encrypted-media"
           />
         </div>
@@ -478,19 +483,19 @@ function AlbumRadio() {
         </div>
       </div>
       {open ? (
-        <ul id="album-list" className="glass absolute inset-x-0 top-full z-40 mt-2 max-h-72 overflow-y-auto rounded-2xl p-1">
+        <ul id="album-list" className="song-menu absolute inset-x-0 top-full z-40 mt-2 max-h-72 overflow-y-auto rounded-2xl p-1">
           {ALBUM.map((song, songIndex) => {
             const current = songIndex === index;
             return (
               <li key={song.id}>
                 <button
                   type="button"
-                  className={`relative z-10 flex min-h-11 w-full items-center gap-3 rounded-card px-3 text-left ${current ? "bg-sunset/15" : "hover:bg-white/5"}`}
+                  className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left ${current ? "bg-sunset/20" : "hover:bg-white/10"}`}
                   aria-current={current ? "true" : undefined}
                   onClick={() => playAt(songIndex)}
                 >
-                  <span className="w-5 shrink-0 font-display text-lg text-sunset">{songIndex + 1}</span>
-                  <span className="min-w-0">
+                  <span className="w-5 shrink-0 text-center font-display text-lg leading-none text-sunset">{songIndex + 1}</span>
+                  <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-sand">{song.title}</span>
                     <span className="block truncate text-xs text-muted">{song.artist}</span>
                   </span>
