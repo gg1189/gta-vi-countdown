@@ -29,10 +29,8 @@ function pickOther(current: number) {
 
 const SHOTS = [
   { src: "/shots/key.jpg", thumb: "/shots/thumb/key.jpg", alt: "Jason 與 Lucia，官方主視覺" },
-  { src: "/shots/poster.jpg", thumb: "/shots/thumb/poster.jpg", alt: "Grand Theft Auto VI 官方海報" },
   { src: "/shots/vice13.jpg", thumb: "/shots/thumb/vice13.jpg", alt: "Vice City 夜景" },
   { src: "/shots/vice18.jpg", thumb: "/shots/thumb/vice18.jpg", alt: "Vice City 街頭" },
-  { src: "/shots/skyline.jpg", thumb: "/shots/thumb/skyline.jpg", alt: "Vice City 黃昏天際線" },
   { src: "/shots/duo.jpg", thumb: "/shots/thumb/duo.jpg", alt: "Jason 與 Lucia 預告畫面" },
   { src: "/shots/pair.jpg", thumb: "/shots/thumb/pair.jpg", alt: "Jason 與 Lucia" },
   { src: "/shots/lucia.jpg", thumb: "/shots/thumb/lucia.jpg", alt: "Lucia Caminos" },
@@ -41,7 +39,6 @@ const SHOTS = [
   { src: "/shots/grass.jpg", thumb: "/shots/thumb/grass.jpg", alt: "Grassrivers" },
   { src: "/shots/keys.jpg", thumb: "/shots/thumb/keys.jpg", alt: "Leonida Keys" },
   { src: "/shots/port.jpg", thumb: "/shots/thumb/port.jpg", alt: "Port Gellhorn" },
-  { src: "/shots/cover.jpg", thumb: "/shots/thumb/cover.jpg", alt: "Grand Theft Auto VI 官方封面" },
 ];
 
 function Home() {
