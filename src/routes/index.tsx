@@ -78,7 +78,22 @@ function Home() {
   const live = secondsLeft === 0;
   const hours = remaining ? remaining.days * 24 + remaining.hours : null;
   const trailerOn = showTrailer && ready && !videoBroken;
-  const shot = SHOTS[still] ?? SHOTS[0];
+  const [frames, setFrames] = useState(() => [{ ...SHOTS[0], drift: false }]);
+
+  useEffect(() => {
+    const next = SHOTS[still] ?? SHOTS[0];
+    setFrames((current) => {
+      const top = current[current.length - 1];
+      if (top?.src === next.src) return current;
+      return [...current.slice(-1), { ...next, drift: !top.drift }];
+    });
+  }, [still]);
+
+  useEffect(() => {
+    const upcoming = SHOTS[(still + 1) % SHOTS.length];
+    const img = new Image();
+    img.src = upcoming.src;
+  }, [still]);
 
   const armVideo = useCallback(() => {
     const video = videoRef.current;
@@ -130,14 +145,18 @@ function Home() {
   return (
     <main className="bg-ink text-sand">
       <div className="pointer-events-none fixed inset-0 z-0">
-        <img
-          src={shot.src}
-          alt={shot.alt}
-          fetchPriority="high"
-          decoding="async"
-          onLoad={() => setArmed(true)}
-          className={`ken absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${trailerOn ? "opacity-0" : "opacity-100"}`}
-        />
+        {frames.map((item, index) => (
+          <StillFrame
+            key={item.src}
+            src={item.src}
+            alt={item.alt}
+            enter={index > 0}
+            hide={trailerOn}
+            drift={item.drift}
+            priority={index === frames.length - 1}
+            onLoad={index === frames.length - 1 ? () => setArmed(true) : undefined}
+          />
+        ))}
         {armed && !videoBroken && (
           <video
             ref={videoRef}
@@ -440,6 +459,43 @@ function AlbumRadio() {
         </ul>
       ) : null}
     </div>
+  );
+}
+
+function StillFrame({
+  src,
+  alt,
+  enter,
+  hide,
+  drift,
+  priority,
+  onLoad,
+}: {
+  src: string;
+  alt: string;
+  enter: boolean;
+  hide: boolean;
+  drift: boolean;
+  priority: boolean;
+  onLoad?: () => void;
+}) {
+  const [shown, setShown] = useState(!enter);
+
+  useEffect(() => {
+    if (!enter) return;
+    const id = window.requestAnimationFrame(() => setShown(true));
+    return () => window.cancelAnimationFrame(id);
+  }, [enter]);
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      fetchPriority={priority ? "high" : "low"}
+      decoding="async"
+      onLoad={onLoad}
+      className={`still absolute inset-0 h-full w-full object-cover ${drift ? "ken-alt" : "ken"} ${shown && !hide ? "opacity-100" : "opacity-0"}`}
+    />
   );
 }
 

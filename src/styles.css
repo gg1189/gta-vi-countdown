@@ -127,8 +127,16 @@
     animation: mega-pop 420ms cubic-bezier(0.2, 0, 0, 1);
   }
 
+  .still {
+    transition: opacity 1.15s ease;
+  }
+
   .ken {
-    animation: ken 14s ease-out forwards;
+    animation: ken 6.4s ease-out forwards;
+  }
+
+  .ken-alt {
+    animation: ken-alt 6.4s ease-out forwards;
   }
 }
 
@@ -346,7 +354,16 @@
     transform: scale(1);
   }
   to {
-    transform: scale(1.08);
+    transform: scale(1.07) translate3d(-1.4%, -0.8%, 0);
+  }
+}
+
+@keyframes ken-alt {
+  from {
+    transform: scale(1.07) translate3d(-1.2%, 0, 0);
+  }
+  to {
+    transform: scale(1) translate3d(0.4%, 0.6%, 0);
   }
 }
 
@@ -354,9 +371,7 @@
   .digit-pop,
   .mega-pop,
   .ken,
-  .digit-pop,
-  .mega-pop,
-  .ken,
+  .ken-alt,
   .colon-live i,
   .cheer,
   .spark,
