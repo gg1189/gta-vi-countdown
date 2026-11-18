@@ -7,6 +7,11 @@ export const Route = createFileRoute("/")({ component: Home });
 
 const TARGET = midnightInZone("Asia/Hong_Kong");
 const TRAILER = "/media/bg.mp4";
+const TRAILERS = [
+  { id: "t1", label: "預告 1", thumb: "/shots/thumb/t1.jpg", yt: "QdBZY2fkU-0" },
+  { id: "t2", label: "預告 2", thumb: "/shots/thumb/t2.jpg", yt: "VQRLujxTm3c" },
+  { id: "launch", label: "開波預告", thumb: "/shots/trailer.jpg" },
+];
 
 const ALBUM = [
   { id: "5dPwBWvmcbQ", title: "Flower in a Hurricane", artist: "Justice" },
@@ -54,7 +59,7 @@ function Home() {
   const [now, setNow] = useState<number | null>(null);
   const [still, setStill] = useState(0);
   const [held, setHeld] = useState(false);
-  const [showTrailer, setShowTrailer] = useState(false);
+  const [clip, setClip] = useState<string | null>(null);
   const [armed, setArmed] = useState(false);
   const [ready, setReady] = useState(false);
   const [videoBroken, setVideoBroken] = useState(false);
@@ -87,7 +92,7 @@ function Home() {
   const heat = secondsLeft == null || secondsLeft >= 3600 ? 0 : secondsLeft <= 0 ? 1 : (3600 - secondsLeft) / 3600;
   const live = secondsLeft === 0;
   const hours = remaining ? remaining.days * 24 + remaining.hours : null;
-  const trailerOn = showTrailer && ready && !videoBroken;
+  const trailerOn = clip === "launch" ? ready && !videoBroken : clip !== null;
   const [frames, setFrames] = useState(() => [{ ...SHOTS[0], drift: false }]);
 
   useEffect(() => {
@@ -143,18 +148,20 @@ function Home() {
   const pickStill = (index: number) => {
     setHeld(true);
     setStill(index);
-    setShowTrailer(false);
+    setClip(null);
+    videoRef.current?.pause();
   };
 
-  const pickTrailer = () => {
+  const pickClip = (id: string) => {
     setHeld(true);
-    setShowTrailer(true);
-    armVideo();
+    setClip(id);
+    if (id === "launch") armVideo();
+    else videoRef.current?.pause();
   };
 
   return (
     <main className="bg-ink text-sand">
-      <div className="pointer-events-none fixed inset-0 z-0">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         {frames.map((item, index) => (
           <StillFrame
             key={item.src}
@@ -170,7 +177,7 @@ function Home() {
         {armed && !videoBroken && (
           <video
             ref={videoRef}
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${trailerOn ? "opacity-100" : "opacity-0"}`}
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${clip === "launch" && trailerOn ? "opacity-100" : "opacity-0"}`}
             src={TRAILER}
             poster="/shots/key.jpg"
             autoPlay
@@ -180,11 +187,22 @@ function Home() {
             preload="auto"
             onCanPlay={() => {
               setReady(true);
-              if (!heldRef.current) setShowTrailer(true);
+              if (!heldRef.current) setClip("launch");
             }}
             onError={() => setVideoBroken(true)}
           />
         )}
+        {clip && clip !== "launch"
+          ? TRAILERS.filter((item) => item.id === clip && item.yt).map((item) => (
+              <iframe
+                key={item.id}
+                title={item.label}
+                className="pointer-events-none absolute top-1/2 left-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 border-0"
+                src={`https://www.youtube-nocookie.com/embed/${item.yt}?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&loop=1&playlist=${item.yt}&disablekb=1&iv_load_policy=3`}
+                allow="autoplay; encrypted-media"
+              />
+            ))
+          : null}
       </div>
 
       <div className="neon-wash pointer-events-none fixed inset-0 z-[1]" style={{ opacity: heat }} />
@@ -228,15 +246,18 @@ function Home() {
         </div>
 
         <div className="absolute inset-x-0 bottom-0 z-20 flex gap-2 overflow-x-auto px-4 pb-4">
-          <button
-            type="button"
-            aria-label="預告片"
-            aria-pressed={trailerOn}
-            onClick={pickTrailer}
-            className={`shrink-0 overflow-hidden rounded-card border-2 ${trailerOn ? "border-sunset" : "border-line"}`}
-          >
-            <img src="/shots/trailer.jpg" alt="" className="h-16 w-28 object-cover sm:h-20 sm:w-36" />
-          </button>
+          {TRAILERS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              aria-label={item.label}
+              aria-pressed={clip === item.id}
+              onClick={() => pickClip(item.id)}
+              className={`shrink-0 overflow-hidden rounded-card border-2 ${clip === item.id ? "border-sunset" : "border-line"}`}
+            >
+              <img src={item.thumb} alt="" className="h-16 w-28 object-cover sm:h-20 sm:w-36" />
+            </button>
+          ))}
           {SHOTS.map((item, index) => (
             <button
               key={item.src}
