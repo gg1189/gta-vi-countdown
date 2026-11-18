@@ -629,11 +629,11 @@ function AlbumRadio({ start, hostRef }: { start: number; hostRef: RefObject<HTML
               </button>
               <span className="w-8 shrink-0 text-right text-[10px] tabular-nums text-muted">{fmt(duration)}</span>
             </div>
-            <div className="flex items-center gap-1 px-2 pt-0.5 pb-2">
-              <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={shuffle} aria-label="隨機" disabled={!ready}>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center px-2 pt-0.5 pb-2">
+              <button type="button" className="inline-flex size-10 items-center justify-center justify-self-start rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={shuffle} aria-label="隨機" disabled={!ready}>
                 <Shuffle className="size-4" aria-hidden="true" />
               </button>
-              <div className="flex flex-1 items-center justify-center gap-1">
+              <div className="flex items-center justify-center gap-1">
                 <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(-1)} aria-label="上一首" disabled={!ready}>
                   <SkipBack className="size-4" aria-hidden="true" />
                 </button>
@@ -651,7 +651,7 @@ function AlbumRadio({ start, hostRef }: { start: number; hostRef: RefObject<HTML
                   <SkipForward className="size-4" aria-hidden="true" />
                 </button>
               </div>
-              <div className="hidden items-center gap-0.5 sm:flex">
+              <div className="hidden items-center justify-self-end gap-0.5 sm:flex">
                 <button
                   type="button"
                   className="inline-flex size-8 items-center justify-center rounded-full text-sand hover:text-sunset"
