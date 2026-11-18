@@ -260,14 +260,6 @@
   }
 }
 
-.song-menu {
-  background: rgb(18 8 20 / 0.94);
-  border: 1px solid rgb(255 255 255 / 0.16);
-  box-shadow: 0 18px 40px rgb(0 0 0 / 0.5);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
 .clock {
   display: grid;
   grid-template-columns: 1fr auto 1fr auto 1fr;
@@ -331,6 +323,11 @@
   border-radius: 999px;
   background: linear-gradient(180deg, rgb(255 255 255 / 0.28), transparent);
   filter: blur(6px);
+}
+
+.song-menu.glass::before,
+.song-menu.glass::after {
+  content: none;
 }
 
 .colon {

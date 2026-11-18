@@ -177,7 +177,7 @@ function Home() {
         <div className="scrim pointer-events-none absolute inset-0" />
 
         <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 px-3 py-3 sm:px-6">
-          <img src="/logo-vi.png" alt="VI" className="h-12 w-auto sm:h-14" />
+          <img src="/logo-vi.png" alt="VI" className="h-8 w-auto" />
           <div className="w-[min(22rem,calc(100%-3.25rem))]">
             <AlbumRadio />
           </div>
@@ -483,14 +483,14 @@ function AlbumRadio() {
         </div>
       </div>
       {open ? (
-        <ul id="album-list" className="song-menu absolute inset-x-0 top-full z-40 mt-2 max-h-72 overflow-y-auto rounded-2xl p-1">
+        <ul id="album-list" className="glass song-menu absolute inset-x-0 top-full z-40 mt-2 max-h-72 overflow-y-auto rounded-2xl p-1">
           {ALBUM.map((song, songIndex) => {
             const current = songIndex === index;
             return (
               <li key={song.id}>
                 <button
                   type="button"
-                  className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left ${current ? "bg-sunset/20" : "hover:bg-white/10"}`}
+                  className={`relative z-10 flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left ${current ? "bg-sunset/20" : "hover:bg-white/10"}`}
                   aria-current={current ? "true" : undefined}
                   onClick={() => playAt(songIndex)}
                 >
