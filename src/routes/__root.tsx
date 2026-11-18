@@ -3,7 +3,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "今晚開場 · GTA VI";
+const APP_NAME = "今晚開波 · GTA VI";
 
 export const Route = createRootRoute({
   head: () => ({
