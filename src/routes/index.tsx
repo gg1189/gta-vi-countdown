@@ -393,7 +393,7 @@ function AlbumRadio() {
 
   return (
     <div ref={rootRef} className="relative min-w-0">
-      <div className="yt-hide relative overflow-hidden rounded-card border border-line bg-ink/80 shadow-lg backdrop-blur-md">
+      <div className="yt-hide glass relative overflow-hidden rounded-card">
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
           <div ref={hostRef} />
         </div>
@@ -435,14 +435,14 @@ function AlbumRadio() {
         </div>
       </div>
       {open ? (
-        <ul id="album-list" className="absolute inset-x-0 top-full z-40 mt-2 max-h-72 overflow-y-auto rounded-card border border-line bg-ink/95 p-1 shadow-lg backdrop-blur-md">
+        <ul id="album-list" className="glass absolute inset-x-0 top-full z-40 mt-2 max-h-72 overflow-y-auto rounded-card p-1">
           {ALBUM.map((song, songIndex) => {
             const current = songIndex === index;
             return (
               <li key={song.id}>
                 <button
                   type="button"
-                  className={`flex min-h-11 w-full items-center gap-3 rounded-card px-3 text-left ${current ? "bg-sunset/15" : "hover:bg-white/5"}`}
+                  className={`relative z-10 flex min-h-11 w-full items-center gap-3 rounded-card px-3 text-left ${current ? "bg-sunset/15" : "hover:bg-white/5"}`}
                   aria-current={current ? "true" : undefined}
                   onClick={() => playAt(songIndex)}
                 >
@@ -501,7 +501,7 @@ function StillFrame({
 function Unit({ value, label }: { value: string; label: string }) {
   return (
     <div className="min-w-0">
-      <div className="plate px-1 py-4 sm:py-6">
+      <div className="plate glass px-1 py-4 sm:py-6">
         <span key={value} className="digit-pop time-num relative z-10 block font-display text-6xl leading-none sm:text-8xl">
           {value}
         </span>
