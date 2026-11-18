@@ -733,51 +733,13 @@ function StillFrame({
 function Unit({ value, label }: { value: string; label: string }) {
   return (
     <div className="min-w-0">
-      <div className="plate glass flex items-center justify-center px-1.5 py-2 sm:py-2.5">
-        {value.split("").map((digit, index) => (
-          <Reel key={index} digit={digit} />
-        ))}
+      <div className="plate glass px-1 py-2 sm:py-2.5">
+        <span key={value} className="digit-pop time-num relative z-10 block font-display text-5xl leading-none sm:text-6xl">
+          {value}
+        </span>
       </div>
       <p className="mt-2 text-xs font-semibold tracking-widest text-muted">{label}</p>
     </div>
-  );
-}
-
-function Reel({ digit }: { digit: string }) {
-  const [current, setCurrent] = useState(digit);
-  const [previous, setPrevious] = useState<string | null>(null);
-
-  if (digit !== current) {
-    const reduce = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!reduce) setPrevious(current);
-    setCurrent(digit);
-  }
-
-  useEffect(() => {
-    if (previous === null) return;
-    const id = window.setTimeout(() => setPrevious(null), 640);
-    return () => window.clearTimeout(id);
-  }, [previous, current]);
-
-  return (
-    <span className="flip font-display text-5xl sm:text-6xl">
-      <span className="flip-half flip-top">
-        <span className="flip-glyph">{current}</span>
-      </span>
-      <span className="flip-half flip-bottom">
-        <span className="flip-glyph">{previous ?? current}</span>
-      </span>
-      {previous !== null ? (
-        <>
-          <span className="flip-mover flip-mover-top">
-            <span className="flip-glyph">{previous}</span>
-          </span>
-          <span className="flip-mover flip-mover-bottom">
-            <span className="flip-glyph">{current}</span>
-          </span>
-        </>
-      ) : null}
-    </span>
   );
 }
 
