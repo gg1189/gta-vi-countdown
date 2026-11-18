@@ -306,16 +306,22 @@ type ScWidget = {
 function AlbumRadio() {
   const hostRef = useRef<HTMLIFrameElement>(null);
   const widgetRef = useRef<ScWidget | null>(null);
-  const indexRef = useRef(Math.floor(Math.random() * TRACKS.length));
+  const indexRef = useRef(0);
   const historyRef = useRef<number[]>([]);
   const startedRef = useRef(false);
   const jumpedRef = useRef(false);
-  const [index, setIndex] = useState(indexRef.current);
+  const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const track = TRACKS[index] ?? TRACKS[0];
+
+  useEffect(() => {
+    const start = Math.floor(Math.random() * TRACKS.length);
+    indexRef.current = start;
+    setIndex(start);
+  }, []);
 
   useEffect(() => {
     const unlock = () => {
