@@ -363,6 +363,7 @@ function AlbumRadio({ start }: { start: number }) {
   const historyRef = useRef<number[]>([]);
   const startedRef = useRef(false);
   const playingRef = useRef(false);
+  const pausedByUser = useRef(false);
   const [index, setIndex] = useState(start);
   const [playing, setPlaying] = useState(false);
   const [open, setOpen] = useState(false);
@@ -377,10 +378,9 @@ function AlbumRadio({ start }: { start: number }) {
 
   useEffect(() => {
     const unlock = (event: PointerEvent) => {
-      const target = event.target;
-      if (target instanceof Element && target.closest("[data-playback]")) return;
+      if (event.target instanceof Element && event.target.closest("[data-playback]")) return;
       const widget = widgetRef.current;
-      if (!widget || startedRef.current) return;
+      if (!widget || playingRef.current || pausedByUser.current) return;
       widget.setVolume(100);
       widget.play();
     };
@@ -401,7 +401,6 @@ function AlbumRadio({ start }: { start: number }) {
 
   useEffect(() => {
     let dead = false;
-    let arm = 0;
     const win = window as Window & { SC?: { Widget: (el: HTMLIFrameElement) => ScWidget } };
 
     const mount = () => {
@@ -411,23 +410,24 @@ function AlbumRadio({ start }: { start: number }) {
       widget.bind("ready", () => {
         if (dead) return;
         setReady(true);
-        arm = window.setTimeout(() => {
-          if (dead || startedRef.current) return;
-          widget.setVolume(100);
-          widget.play();
-        }, 2500);
+        widget.setVolume(100);
+        widget.play();
       });
       widget.bind("play", () => {
-        startedRef.current = true;
-        playingRef.current = true;
-        setPlaying(true);
         widget.getDuration((ms) => {
           durationRef.current = ms;
           setDuration(ms);
         });
       });
       widget.bind("playProgress", (data) => {
-        const apply = (pos: number) => setProgress((prev) => (Math.abs(prev - pos) < 200 ? prev : pos));
+        const apply = (pos: number) => {
+          if (pos > 0) {
+            playingRef.current = true;
+            startedRef.current = true;
+            setPlaying(true);
+          }
+          setProgress((prev) => (Math.abs(prev - pos) < 200 ? prev : pos));
+        };
         if (typeof data?.currentPosition === "number") apply(data.currentPosition);
         else widget.getPosition(apply);
       });
@@ -455,19 +455,21 @@ function AlbumRadio({ start }: { start: number }) {
     }
     return () => {
       dead = true;
-      window.clearTimeout(arm);
     };
   }, []);
 
-  const toggle = () => {
+  const toggle = (event: { stopPropagation: () => void }) => {
+    event.stopPropagation();
     const widget = widgetRef.current;
     if (!widget) return;
     if (playingRef.current) {
-      widget.pause();
+      pausedByUser.current = true;
       playingRef.current = false;
+      widget.pause();
       setPlaying(false);
       return;
     }
+    pausedByUser.current = false;
     widget.setVolume(100);
     widget.play();
   };
@@ -529,7 +531,7 @@ function AlbumRadio({ start }: { start: number }) {
           ref={hostRef}
           title="GTA VI The Album"
           className="h-[166px] w-[400px] border-0"
-          src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=false&start_track=${start}&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
+          src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&start_track=${start}&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
           allow="autoplay; encrypted-media"
         />
       </div>
@@ -539,7 +541,7 @@ function AlbumRadio({ start }: { start: number }) {
             type="button"
             className="group relative size-10 shrink-0 overflow-hidden rounded-lg disabled:opacity-40"
             data-playback="toggle"
-            onClick={toggle}
+            onPointerDown={toggle}
             disabled={!ready}
             aria-label={playing ? "暫停" : "播放"}
           >
@@ -610,7 +612,7 @@ function AlbumRadio({ start }: { start: number }) {
                   type="button"
                   className="inline-flex size-12 items-center justify-center rounded-full bg-sunset text-ink shadow-[0_8px_20px_rgb(255_107_61_/_0.35)] disabled:opacity-40"
                   data-playback="toggle"
-                  onClick={toggle}
+                  onPointerDown={toggle}
                   disabled={!ready}
                   aria-label={playing ? "暫停" : "播放"}
                 >
