@@ -8,9 +8,9 @@ export const Route = createFileRoute("/")({ component: Home });
 const TARGET = midnightInZone("Asia/Hong_Kong");
 const TRAILER = "/media/bg.mp4";
 const TRAILERS = [
+  { id: "launch", label: "預告", thumb: "/shots/trailer.jpg" },
   { id: "t1", label: "預告 1", thumb: "/shots/thumb/t1.jpg", yt: "QdBZY2fkU-0" },
   { id: "t2", label: "預告 2", thumb: "/shots/thumb/t2.jpg", yt: "VQRLujxTm3c" },
-  { id: "launch", label: "開波預告", thumb: "/shots/trailer.jpg" },
 ];
 
 const ALBUM = [
