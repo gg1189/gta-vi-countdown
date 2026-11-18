@@ -103,7 +103,7 @@ function Home() {
     if (trailerOn) return;
     const id = window.setTimeout(() => {
       setStill((current) => (current + 1) % SHOTS.length);
-    }, 3200);
+    }, 5000);
     return () => window.clearTimeout(id);
   }, [trailerOn, still]);
 
