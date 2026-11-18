@@ -744,32 +744,39 @@ function Unit({ value, label }: { value: string; label: string }) {
 }
 
 function Reel({ digit }: { digit: string }) {
-  const [shown, setShown] = useState(digit);
-  const [leaving, setLeaving] = useState<string | null>(null);
-  const [gen, setGen] = useState(0);
+  const [current, setCurrent] = useState(digit);
+  const [previous, setPrevious] = useState<string | null>(null);
 
-  if (digit !== shown) {
-    setLeaving(shown);
-    setShown(digit);
-    setGen((n) => n + 1);
+  if (digit !== current) {
+    const reduce = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce) setPrevious(current);
+    setCurrent(digit);
   }
 
   useEffect(() => {
-    if (leaving === null) return;
-    const id = window.setTimeout(() => setLeaving(null), 560);
+    if (previous === null) return;
+    const id = window.setTimeout(() => setPrevious(null), 640);
     return () => window.clearTimeout(id);
-  }, [gen, leaving]);
+  }, [previous, current]);
 
   return (
-    <span className="reel font-display text-5xl sm:text-6xl">
-      {leaving !== null ? (
-        <span key={`out-${gen}`} className="reel-num reel-out">
-          {leaving}
-        </span>
-      ) : null}
-      <span key={`in-${gen}`} className={leaving !== null ? "reel-num reel-in" : "reel-num"}>
-        {shown}
+    <span className="flip font-display text-5xl sm:text-6xl">
+      <span className="flip-half flip-top">
+        <span className="flip-glyph">{current}</span>
       </span>
+      <span className="flip-half flip-bottom">
+        <span className="flip-glyph">{previous ?? current}</span>
+      </span>
+      {previous !== null ? (
+        <>
+          <span className="flip-mover flip-mover-top">
+            <span className="flip-glyph">{previous}</span>
+          </span>
+          <span className="flip-mover flip-mover-bottom">
+            <span className="flip-glyph">{current}</span>
+          </span>
+        </>
+      ) : null}
     </span>
   );
 }
