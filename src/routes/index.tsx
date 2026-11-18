@@ -291,7 +291,7 @@ function Home() {
               {active.yt ? null : (
                 <video key={active.id} className="absolute inset-0 h-full w-full" src={TRAILER} poster={active.thumb} autoPlay controls playsInline />
               )}
-              <div className="absolute inset-x-0 top-0 z-[70] flex items-center gap-1.5 bg-gradient-to-b from-black/70 to-transparent p-2">
+              <div className={`absolute inset-x-0 top-0 z-[70] flex items-center gap-1.5 bg-gradient-to-b from-black/70 to-transparent p-2 ${active.yt ? "hidden" : ""}`}>
                 {TRAILERS.map((item) => (
                   <button
                     key={item.id}
@@ -308,6 +308,27 @@ function Home() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {active && modal && active.yt ? (
+        <div className="pointer-events-none fixed top-1/2 left-1/2 z-[60] aspect-video w-[min(56rem,calc(100%-1.5rem))] -translate-x-1/2 -translate-y-1/2">
+          <div className="pointer-events-auto absolute inset-x-0 top-0 flex items-center gap-1.5 bg-gradient-to-b from-black/70 to-transparent p-2">
+            {TRAILERS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={item.id === active.id}
+                onClick={() => pickClip(item.id, true)}
+                className={`min-h-9 rounded-full px-3 text-xs font-semibold tracking-widest ${item.id === active.id ? "bg-sunset text-ink" : "bg-white/15 text-sand"}`}
+              >
+                {item.label}
+              </button>
+            ))}
+            <button type="button" className="ml-auto inline-flex size-9 items-center justify-center rounded-full bg-white/15 text-sand" onClick={closeModal} aria-label="關閉">
+              <X className="size-4" aria-hidden="true" />
+            </button>
           </div>
         </div>
       ) : null}
