@@ -180,14 +180,14 @@ function Home() {
       <section className="relative z-10 min-h-dvh overflow-hidden">
         <div className="scrim pointer-events-none absolute inset-0" />
 
-        <header className="absolute inset-x-0 top-0 z-30 flex items-center gap-3 px-3 py-3 sm:px-6">
+        <header className="absolute inset-x-0 top-0 z-30 flex items-center gap-2 px-3 py-2 sm:px-6">
           <p className="font-display text-4xl leading-none text-sand">VI</p>
           <div className="min-w-0 flex-1">
             <AlbumRadio />
           </div>
         </header>
 
-        <div className="relative z-10 mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center px-4 pt-28 pb-28 text-center">
+        <div className="relative z-10 mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center px-4 pt-20 pb-28 text-center">
           <p className="text-xs font-semibold tracking-widest text-sunset">GRAND THEFT AUTO VI</p>
           <h1 key={copy.title} className="cheer mt-2 font-sans text-4xl font-bold tracking-tight text-sand sm:text-6xl">
             {copy.title}
@@ -397,35 +397,34 @@ function AlbumRadio() {
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
           <div ref={hostRef} />
         </div>
-        <div className="relative z-10 flex items-center gap-2 px-2 py-2">
+        <div className="relative z-10 flex items-center gap-1 px-1.5 py-1">
           <button
             type="button"
-            className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-sunset text-ink disabled:opacity-40"
+            className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-sunset text-ink disabled:opacity-40"
             onClick={toggle}
             disabled={!ready}
             aria-label={playing ? "暫停" : "播放"}
           >
             {playing ? <Pause className="size-4" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
           </button>
-          <div className="min-w-0 flex-1 text-left">
-            <p className="text-xs font-semibold tracking-widest text-sunset">THE ALBUM</p>
-            <p className="truncate text-sm font-semibold text-sand">{track.title}</p>
-            <p className="truncate text-xs text-muted">{track.artist}</p>
-          </div>
+          <p className="min-w-0 flex-1 truncate text-left text-sm text-sand">
+            <span className="font-semibold">{track.title}</span>
+            <span className="text-muted"> · {track.artist}</span>
+          </p>
           <span className={playing ? "eq shrink-0" : "eq shrink-0 opacity-30"} aria-hidden="true">
             <i />
             <i />
             <i />
           </span>
-          <button type="button" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset" onClick={() => step(-1)} aria-label="上一首">
+          <button type="button" className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset" onClick={() => step(-1)} aria-label="上一首">
             <SkipBack className="size-4" aria-hidden="true" />
           </button>
-          <button type="button" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset" onClick={() => step(1)} aria-label="隨機下一首">
+          <button type="button" className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset" onClick={() => step(1)} aria-label="隨機下一首">
             <Shuffle className="size-4" aria-hidden="true" />
           </button>
           <button
             type="button"
-            className={`inline-flex size-11 shrink-0 items-center justify-center rounded-full ${open ? "bg-sunset text-ink" : "text-sand hover:text-sunset"}`}
+            className={`inline-flex size-10 shrink-0 items-center justify-center rounded-full ${open ? "bg-sunset text-ink" : "text-sand hover:text-sunset"}`}
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             aria-controls="album-list"
