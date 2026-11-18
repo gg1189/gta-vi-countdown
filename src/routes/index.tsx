@@ -3,7 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { ListMusic, Maximize2, Pause, Play, Shuffle, SkipBack, X } from "lucide-react";
 import { midnightInZone, pad, splitRemaining } from "@/lib/launch-target";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/")({
+  loader: () => ({ start: Math.floor(Math.random() * ALBUM.length) }),
+  component: Home,
+});
 
 const TARGET = midnightInZone("Asia/Hong_Kong");
 const TRAILER = "/media/bg.mp4";
@@ -300,12 +303,14 @@ type YtPlayer = {
 };
 
 function AlbumRadio() {
-  const hostRef = useRef<HTMLDivElement>(null);
+  const { start } = Route.useLoaderData();
+  const hostRef = useRef<HTMLIFrameElement>(null);
   const playerRef = useRef<YtPlayer | null>(null);
-  const indexRef = useRef(0);
+  const indexRef = useRef(start);
   const historyRef = useRef<number[]>([]);
   const startedRef = useRef(false);
-  const [index, setIndex] = useState(0);
+  const initialId = ALBUM[start]?.id ?? ALBUM[0].id;
+  const [index, setIndex] = useState(start);
   const [playing, setPlaying] = useState(false);
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
@@ -334,9 +339,6 @@ function AlbumRadio() {
   }, [open]);
 
   useEffect(() => {
-    const first = Math.floor(Math.random() * ALBUM.length);
-    indexRef.current = first;
-    setIndex(first);
     let dead = false;
     const win = window as Window & {
       YT?: { Player: new (el: HTMLElement, options: object) => YtPlayer };
@@ -346,25 +348,19 @@ function AlbumRadio() {
     const mount = () => {
       if (dead || !hostRef.current || !win.YT?.Player || playerRef.current) return;
       playerRef.current = new win.YT.Player(hostRef.current, {
-        width: "100%",
-        height: "48",
-        videoId: ALBUM[indexRef.current].id,
-        playerVars: {
-          autoplay: 1,
-          mute: 1,
-          controls: 0,
-          rel: 0,
-          modestbranding: 1,
-          playsinline: 1,
-          disablekb: 1,
-          fs: 0,
-          iv_load_policy: 3,
-        },
         events: {
           onReady: (event: { target: YtPlayer }) => {
             setReady(true);
-            event.target.mute();
+            event.target.unMute();
             event.target.playVideo();
+            window.setTimeout(() => {
+              if (event.target.getPlayerState() === 1) {
+                startedRef.current = true;
+                return;
+              }
+              event.target.mute();
+              event.target.playVideo();
+            }, 500);
           },
           onStateChange: (event: { data: number }) => {
             if (event.data === 0) {
@@ -393,9 +389,6 @@ function AlbumRadio() {
       previous?.();
       mount();
     };
-    const script = document.createElement("script");
-    script.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(script);
     return () => {
       dead = true;
     };
@@ -440,7 +433,12 @@ function AlbumRadio() {
     <div ref={rootRef} className="relative min-w-0">
       <div className="yt-hide glass relative overflow-hidden rounded-full">
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div ref={hostRef} />
+          <iframe
+            ref={hostRef}
+            title={track.title}
+            src={`https://www.youtube.com/embed/${initialId}?autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&enablejsapi=1`}
+            allow="autoplay; encrypted-media"
+          />
         </div>
         <div className="relative z-10 flex items-center gap-1 px-1.5 py-1">
           <button
