@@ -28,26 +28,26 @@ function pickOther(current: number) {
 }
 
 const SHOTS = [
-  { src: "/shots/key.jpg", thumb: "/shots/thumb/key.jpg", alt: "Jason 與 Lucia，官方主視覺", place: "Vice City" },
-  { src: "/shots/vice13.jpg", thumb: "/shots/thumb/vice13.jpg", alt: "Vice City 夜景", place: "Vice City" },
-  { src: "/shots/vice14.jpg", thumb: "/shots/thumb/vice14.jpg", alt: "Vice City 公路", place: "Vice City" },
-  { src: "/shots/vice16.jpg", thumb: "/shots/thumb/vice16.jpg", alt: "Vice City 沙灘", place: "Vice City" },
-  { src: "/shots/vice18.jpg", thumb: "/shots/thumb/vice18.jpg", alt: "Vice City 街頭", place: "Vice City" },
-  { src: "/shots/vice21.jpg", thumb: "/shots/thumb/vice21.jpg", alt: "Vice City 夜街", place: "Vice City" },
-  { src: "/shots/vice24.jpg", thumb: "/shots/thumb/vice24.jpg", alt: "Vice City 碼頭", place: "Vice City" },
-  { src: "/shots/vice25.jpg", thumb: "/shots/thumb/vice25.jpg", alt: "Vice City 海岸公路", place: "Vice City" },
-  { src: "/shots/duo.jpg", thumb: "/shots/thumb/duo.jpg", alt: "Jason 與 Lucia 預告畫面", place: "Vice City" },
-  { src: "/shots/pair.jpg", thumb: "/shots/thumb/pair.jpg", alt: "Jason 與 Lucia", place: "Vice City" },
-  { src: "/shots/pair2.jpg", thumb: "/shots/thumb/pair2.jpg", alt: "Jason 與 Lucia 車內", place: "Vice City" },
-  { src: "/shots/lucia.jpg", thumb: "/shots/thumb/lucia.jpg", alt: "Lucia Caminos", place: "Lucia" },
-  { src: "/shots/lucia2.jpg", thumb: "/shots/thumb/lucia2.jpg", alt: "Lucia 車內", place: "Lucia" },
-  { src: "/shots/jason.jpg", thumb: "/shots/thumb/jason.jpg", alt: "Jason Duval", place: "Jason" },
-  { src: "/shots/jason2.jpg", thumb: "/shots/thumb/jason2.jpg", alt: "Jason 車房", place: "Jason" },
-  { src: "/shots/postcard.jpg", thumb: "/shots/thumb/postcard.jpg", alt: "Vice City 海岸", place: "Vice City" },
-  { src: "/shots/grass.jpg", thumb: "/shots/thumb/grass.jpg", alt: "Grassrivers", place: "Grassrivers" },
-  { src: "/shots/grass2.jpg", thumb: "/shots/thumb/grass2.jpg", alt: "Grassrivers 沼澤", place: "Grassrivers" },
-  { src: "/shots/keys.jpg", thumb: "/shots/thumb/keys.jpg", alt: "Leonida Keys", place: "Leonida Keys" },
-  { src: "/shots/port.jpg", thumb: "/shots/thumb/port.jpg", alt: "Port Gellhorn", place: "Port Gellhorn" },
+  { src: "/shots/key.jpg", thumb: "/shots/thumb/key.jpg", alt: "Jason 與 Lucia，官方主視覺" },
+  { src: "/shots/vice13.jpg", thumb: "/shots/thumb/vice13.jpg", alt: "Vice City 夜景" },
+  { src: "/shots/vice14.jpg", thumb: "/shots/thumb/vice14.jpg", alt: "Vice City 公路" },
+  { src: "/shots/vice16.jpg", thumb: "/shots/thumb/vice16.jpg", alt: "Vice City 沙灘" },
+  { src: "/shots/vice18.jpg", thumb: "/shots/thumb/vice18.jpg", alt: "Vice City 街頭" },
+  { src: "/shots/vice21.jpg", thumb: "/shots/thumb/vice21.jpg", alt: "Vice City 夜街" },
+  { src: "/shots/vice24.jpg", thumb: "/shots/thumb/vice24.jpg", alt: "Vice City 碼頭" },
+  { src: "/shots/vice25.jpg", thumb: "/shots/thumb/vice25.jpg", alt: "Vice City 海岸公路" },
+  { src: "/shots/duo.jpg", thumb: "/shots/thumb/duo.jpg", alt: "Jason 與 Lucia 預告畫面" },
+  { src: "/shots/pair.jpg", thumb: "/shots/thumb/pair.jpg", alt: "Jason 與 Lucia" },
+  { src: "/shots/pair2.jpg", thumb: "/shots/thumb/pair2.jpg", alt: "Jason 與 Lucia 車內" },
+  { src: "/shots/lucia.jpg", thumb: "/shots/thumb/lucia.jpg", alt: "Lucia Caminos" },
+  { src: "/shots/lucia2.jpg", thumb: "/shots/thumb/lucia2.jpg", alt: "Lucia 車內" },
+  { src: "/shots/jason.jpg", thumb: "/shots/thumb/jason.jpg", alt: "Jason Duval" },
+  { src: "/shots/jason2.jpg", thumb: "/shots/thumb/jason2.jpg", alt: "Jason 車房" },
+  { src: "/shots/postcard.jpg", thumb: "/shots/thumb/postcard.jpg", alt: "Vice City 海岸" },
+  { src: "/shots/grass.jpg", thumb: "/shots/thumb/grass.jpg", alt: "Grassrivers" },
+  { src: "/shots/grass2.jpg", thumb: "/shots/thumb/grass2.jpg", alt: "Grassrivers 沼澤" },
+  { src: "/shots/keys.jpg", thumb: "/shots/thumb/keys.jpg", alt: "Leonida Keys" },
+  { src: "/shots/port.jpg", thumb: "/shots/thumb/port.jpg", alt: "Port Gellhorn" },
 ];
 
 function Home() {
@@ -89,14 +89,6 @@ function Home() {
   const hours = remaining ? remaining.days * 24 + remaining.hours : null;
   const trailerOn = showTrailer && ready && !videoBroken;
   const [frames, setFrames] = useState(() => [{ ...SHOTS[0], drift: false }]);
-  const [placeOn, setPlaceOn] = useState(true);
-  const place = trailerOn ? "預告片" : (SHOTS[still]?.place ?? "");
-
-  useEffect(() => {
-    setPlaceOn(true);
-    const id = window.setTimeout(() => setPlaceOn(false), 3000);
-    return () => window.clearTimeout(id);
-  }, [still, trailerOn]);
 
   useEffect(() => {
     const next = SHOTS[still] ?? SHOTS[0];
@@ -234,10 +226,6 @@ function Home() {
 
           <p className="mt-5 text-xs font-semibold tracking-widest text-muted">香港時間 · 11月19日 00:00</p>
         </div>
-
-        <p className={`glass chip pointer-events-none absolute bottom-28 left-4 z-20 rounded-full px-3 py-1.5 text-xs font-semibold tracking-widest text-sand ${placeOn ? "opacity-100" : "opacity-0"}`}>
-          {place}
-        </p>
 
         <div className="absolute inset-x-0 bottom-0 z-20 flex gap-2 overflow-x-auto px-4 pb-4">
           <button
