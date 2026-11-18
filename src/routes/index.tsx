@@ -401,7 +401,7 @@ function AlbumRadio({ start }: { start: number }) {
 
   useEffect(() => {
     let dead = false;
-    let retry = 0;
+    let arm = 0;
     const win = window as Window & { SC?: { Widget: (el: HTMLIFrameElement) => ScWidget } };
 
     const mount = () => {
@@ -411,11 +411,13 @@ function AlbumRadio({ start }: { start: number }) {
       widget.bind("ready", () => {
         if (dead) return;
         setReady(true);
-        widget.setVolume(100);
-        widget.play();
+        arm = window.setTimeout(() => {
+          if (dead || startedRef.current) return;
+          widget.setVolume(100);
+          widget.play();
+        }, 2500);
       });
       widget.bind("play", () => {
-        window.clearInterval(retry);
         startedRef.current = true;
         playingRef.current = true;
         setPlaying(true);
@@ -444,29 +446,16 @@ function AlbumRadio({ start }: { start: number }) {
       });
     };
 
-    if (win.SC?.Widget) {
-      mount();
-    } else {
+    if (win.SC?.Widget) mount();
+    else {
       const script = document.createElement("script");
       script.src = "https://w.soundcloud.com/player/api.js";
       script.onload = () => mount();
       document.head.appendChild(script);
     }
-    const retryId = window.setInterval(() => {
-      if (dead) return;
-      const widget = widgetRef.current;
-      if (!widget) {
-        mount();
-        return;
-      }
-      widget.play();
-    }, 800);
-    retry = retryId;
-    const stop = window.setTimeout(() => window.clearInterval(retry), 5000);
     return () => {
       dead = true;
-      window.clearInterval(retry);
-      window.clearTimeout(stop);
+      window.clearTimeout(arm);
     };
   }, []);
 
@@ -540,7 +529,7 @@ function AlbumRadio({ start }: { start: number }) {
           ref={hostRef}
           title="GTA VI The Album"
           className="h-[166px] w-[400px] border-0"
-          src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&start_track=${start}&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
+          src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=false&start_track=${start}&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
           allow="autoplay; encrypted-media"
         />
       </div>
