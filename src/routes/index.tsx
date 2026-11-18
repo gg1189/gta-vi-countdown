@@ -651,7 +651,7 @@ function AlbumRadio({ start, hostRef }: { start: number; hostRef: RefObject<HTML
                   <SkipForward className="size-4" aria-hidden="true" />
                 </button>
               </div>
-              <div className="flex items-center gap-0.5">
+              <div className="hidden items-center gap-0.5 sm:flex">
                 <button
                   type="button"
                   className="inline-flex size-8 items-center justify-center rounded-full text-sand hover:text-sunset"
