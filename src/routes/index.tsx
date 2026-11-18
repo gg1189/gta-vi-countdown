@@ -532,10 +532,11 @@ function AlbumRadio() {
       ref={rootRef}
       className={`relative ml-auto min-w-0 transition-[width] duration-300 ${expanded ? "w-full" : "w-[min(15rem,100%)]"}`}
       onPointerEnter={(event) => {
-        setHover(true);
-        if (event.pointerType === "touch") setPinned(true);
+        if (event.pointerType === "mouse") setHover(true);
       }}
-      onPointerLeave={() => setHover(false)}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") setHover(false);
+      }}
     >
       <div className="sc-hide" aria-hidden="true">
         <iframe
@@ -558,10 +559,23 @@ function AlbumRadio() {
               </p>
             ) : null}
           </div>
+          <span className={playing ? "eq shrink-0" : "eq shrink-0 opacity-30"} aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
           <button
             type="button"
             className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset"
-            onClick={() => setPinned((value) => !value)}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              if (pinned) {
+                setPinned(false);
+                setHover(false);
+                return;
+              }
+              setPinned(true);
+            }}
             aria-expanded={expanded}
             aria-label={expanded ? "收起" : "展開"}
           >
@@ -600,11 +614,6 @@ function AlbumRadio() {
               <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(1)} aria-label="下一首" disabled={!ready}>
                 <SkipForward className="size-4" aria-hidden="true" />
               </button>
-              <span className={playing ? "eq shrink-0" : "eq shrink-0 opacity-30"} aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </span>
             </div>
             <button type="button" className="relative z-10 mx-3 mt-1 mb-2 block h-1 w-[calc(100%-1.5rem)] rounded-full bg-white/15" onClick={seek} aria-label="播放進度">
               <span className="absolute inset-y-0 left-0 rounded-full bg-sunset" style={{ width: `${ratio}%` }} />
