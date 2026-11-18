@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from "react";
 import { ChevronDown, ListMusic, Maximize2, Pause, Play, Shuffle, SkipBack, SkipForward, X } from "lucide-react";
 import { midnightInZone, pad, splitRemaining } from "@/lib/launch-target";
 
@@ -62,6 +62,7 @@ const SHOTS = [
 
 function Home() {
   const { start } = Route.useLoaderData();
+  const hostRef = useRef<HTMLIFrameElement>(null);
   const [now, setNow] = useState<number | null>(null);
   const [still, setStill] = useState(0);
   const [clip, setClip] = useState<string | null>(null);
@@ -173,7 +174,14 @@ function Home() {
 
   return (
     <main className="bg-ink text-sand">
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+      <iframe
+        ref={hostRef}
+        title="GTA VI The Album"
+        className="sc-hide"
+        src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&start_track=${start}&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
+        allow="autoplay; encrypted-media"
+      />
+      <div className="pointer-events-none fixed inset-0 z-[1] overflow-hidden bg-ink">
         {frames.map((item, index) => (
           <StillFrame
             key={item.src}
@@ -216,7 +224,7 @@ function Home() {
         <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 px-3 py-3 sm:px-6">
           <img src="/logo-vi.png" alt="VI" className="h-8 w-auto" />
           <div className="ml-auto w-[min(24rem,calc(100%-2.75rem))]">
-            <AlbumRadio start={start} />
+            <AlbumRadio start={start} hostRef={hostRef} />
           </div>
         </header>
 
@@ -356,8 +364,7 @@ type ScWidget = {
   isPaused: (callback: (paused: boolean) => void) => void;
 };
 
-function AlbumRadio({ start }: { start: number }) {
-  const hostRef = useRef<HTMLIFrameElement>(null);
+function AlbumRadio({ start, hostRef }: { start: number; hostRef: RefObject<HTMLIFrameElement | null> }) {
   const widgetRef = useRef<ScWidget | null>(null);
   const indexRef = useRef(start);
   const historyRef = useRef<number[]>([]);
@@ -410,8 +417,17 @@ function AlbumRadio({ start }: { start: number }) {
       widget.bind("ready", () => {
         if (dead) return;
         setReady(true);
-        widget.setVolume(100);
-        widget.play();
+        const kick = () => {
+          if (dead || pausedByUser.current || playingRef.current) return;
+          widget.setVolume(100);
+          widget.isPaused((paused) => {
+            if (dead || pausedByUser.current || playingRef.current || !paused) return;
+            widget.play();
+          });
+        };
+        kick();
+        window.setTimeout(kick, 700);
+        window.setTimeout(kick, 1800);
       });
       widget.bind("play", () => {
         widget.getDuration((ms) => {
@@ -526,15 +542,6 @@ function AlbumRadio({ start }: { start: number }) {
         if (event.pointerType === "mouse") setHover(false);
       }}
     >
-      <div className="sc-hide" aria-hidden="true">
-        <iframe
-          ref={hostRef}
-          title="GTA VI The Album"
-          className="h-[166px] w-[400px] border-0"
-          src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&start_track=${start}&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
-          allow="autoplay; encrypted-media"
-        />
-      </div>
       <div className="glass relative overflow-hidden rounded-[1.4rem]">
         <div className="relative z-10 flex items-center gap-2 px-1.5 py-1.5">
           <button
