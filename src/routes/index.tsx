@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ListMusic, Pause, Play, Shuffle, SkipBack, X } from "lucide-react";
+import { ListMusic, Maximize2, Pause, Play, Shuffle, SkipBack, X } from "lucide-react";
 import { midnightInZone, pad, splitRemaining } from "@/lib/launch-target";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -59,6 +59,7 @@ function Home() {
   const [now, setNow] = useState<number | null>(null);
   const [still, setStill] = useState(0);
   const [clip, setClip] = useState<string | null>(null);
+  const [modal, setModal] = useState(false);
 
   const remaining = now === null ? null : splitRemaining(TARGET - now);
   const secondsLeft =
@@ -112,13 +113,13 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    if (!clip) return;
+    if (!modal) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setClip(null);
+      if (event.key === "Escape") setModal(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [clip]);
+  }, [modal]);
 
   useEffect(() => {
     if (trailerOn) return;
@@ -131,10 +132,12 @@ function Home() {
   const pickStill = (index: number) => {
     setStill(index);
     setClip(null);
+    setModal(false);
   };
 
-  const pickClip = (id: string) => {
+  const pickClip = (id: string, intoModal = false) => {
     setClip(id);
+    setModal(intoModal);
   };
 
   return (
@@ -146,11 +149,23 @@ function Home() {
             src={item.src}
             alt={item.alt}
             enter={index > 0}
-            hide={false}
+            hide={Boolean(active) && !modal}
             drift={item.drift}
             priority={index === frames.length - 1}
           />
         ))}
+        {active && !modal && !active.yt ? (
+          <video className="absolute inset-0 h-full w-full object-cover" src={TRAILER} poster={active.thumb} autoPlay muted loop playsInline />
+        ) : null}
+        {active && !modal && active.yt ? (
+          <iframe
+            key={active.id}
+            title={active.label}
+            className="pointer-events-none absolute top-1/2 left-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 border-0"
+            src={`https://www.youtube-nocookie.com/embed/${active.yt}?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&loop=1&playlist=${active.yt}&disablekb=1&iv_load_policy=3`}
+            allow="autoplay; encrypted-media"
+          />
+        ) : null}
       </div>
 
       <div className="neon-wash pointer-events-none fixed inset-0 z-[1]" style={{ opacity: heat }} />
@@ -193,6 +208,17 @@ function Home() {
           <p className="mt-5 text-xs font-semibold tracking-widest text-muted">香港時間 · 11月19日 00:00</p>
         </div>
 
+        {active && !modal ? (
+          <button
+            type="button"
+            className="glass absolute bottom-28 right-4 z-20 inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-sand"
+            onClick={() => setModal(true)}
+          >
+            <Maximize2 className="size-4" aria-hidden="true" />
+            放大
+          </button>
+        ) : null}
+
         <div className="absolute inset-x-0 bottom-0 z-20 flex gap-2 overflow-x-auto px-4 pb-4">
           {TRAILERS.map((item) => (
             <button
@@ -222,8 +248,8 @@ function Home() {
         </div>
       </section>
 
-      {active ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={active.label} onClick={() => setClip(null)}>
+      {active && modal ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={active.label} onClick={() => setModal(false)}>
           <div className="glass w-full max-w-4xl overflow-hidden rounded-card" onClick={(event) => event.stopPropagation()}>
             <div className="relative aspect-video bg-black">
               {active.yt ? (
@@ -244,13 +270,13 @@ function Home() {
                     key={item.id}
                     type="button"
                     aria-pressed={item.id === active.id}
-                    onClick={() => pickClip(item.id)}
+                    onClick={() => pickClip(item.id, true)}
                     className={`min-h-9 rounded-full px-3 text-xs font-semibold tracking-widest ${item.id === active.id ? "bg-sunset text-ink" : "bg-white/15 text-sand"}`}
                   >
                     {item.label}
                   </button>
                 ))}
-                <button type="button" className="ml-auto inline-flex size-9 items-center justify-center rounded-full bg-white/15 text-sand" onClick={() => setClip(null)} aria-label="關閉">
+                <button type="button" className="ml-auto inline-flex size-9 items-center justify-center rounded-full bg-white/15 text-sand" onClick={() => setModal(false)} aria-label="關閉">
                   <X className="size-4" aria-hidden="true" />
                 </button>
               </div>
