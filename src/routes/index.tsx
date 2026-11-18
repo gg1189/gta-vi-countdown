@@ -726,13 +726,44 @@ function StillFrame({
 function Unit({ value, label }: { value: string; label: string }) {
   return (
     <div className="min-w-0">
-      <div className="plate glass px-1 py-2 sm:py-2.5">
-        <span key={value} className="digit-pop time-num relative z-10 block font-display text-5xl leading-none sm:text-6xl">
-          {value}
-        </span>
+      <div className="plate glass flex items-center justify-center px-1.5 py-2 sm:py-2.5">
+        {value.split("").map((digit, index) => (
+          <Reel key={index} digit={digit} />
+        ))}
       </div>
       <p className="mt-2 text-xs font-semibold tracking-widest text-muted">{label}</p>
     </div>
+  );
+}
+
+function Reel({ digit }: { digit: string }) {
+  const [shown, setShown] = useState(digit);
+  const [leaving, setLeaving] = useState<string | null>(null);
+  const [gen, setGen] = useState(0);
+
+  if (digit !== shown) {
+    setLeaving(shown);
+    setShown(digit);
+    setGen((n) => n + 1);
+  }
+
+  useEffect(() => {
+    if (leaving === null) return;
+    const id = window.setTimeout(() => setLeaving(null), 560);
+    return () => window.clearTimeout(id);
+  }, [gen, leaving]);
+
+  return (
+    <span className="reel font-display text-5xl sm:text-6xl">
+      {leaving !== null ? (
+        <span key={`out-${gen}`} className="reel-num reel-out">
+          {leaving}
+        </span>
+      ) : null}
+      <span key={`in-${gen}`} className={leaving !== null ? "reel-num reel-in" : "reel-num"}>
+        {shown}
+      </span>
+    </span>
   );
 }
 
