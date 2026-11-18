@@ -3,10 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ListMusic, Maximize2, Pause, Play, Shuffle, SkipBack, X } from "lucide-react";
 import { midnightInZone, pad, splitRemaining } from "@/lib/launch-target";
 
-export const Route = createFileRoute("/")({
-  loader: () => ({ start: Math.floor(Math.random() * ALBUM.length) }),
-  component: Home,
-});
+export const Route = createFileRoute("/")({ component: Home });
 
 const TARGET = midnightInZone("Asia/Hong_Kong");
 const TRAILER = "/media/bg.mp4";
@@ -16,22 +13,12 @@ const TRAILERS = [
   { id: "t2", label: "Trailer 2", thumb: "/shots/thumb/t2.jpg", yt: "VQRLujxTm3c" },
 ];
 
-const ALBUM = [
-  { id: "5dPwBWvmcbQ", title: "Flower in a Hurricane", artist: "Justice" },
-  { id: "joMjcNtxuTU", title: "That's It", artist: "Yung Lean" },
-  { id: "3Ev1PQEm7ns", title: "RHYNO", artist: "Travis Scott" },
-  { id: "G59iOfClrVo", title: "Sexy Magic", artist: "CA7RIEL & Paco Amoroso" },
-  { id: "9leAwpph-xs", title: "Last Thing You Need", artist: "Morgan Wallen" },
-  { id: "wROPn_SFE5s", title: "Suzuki", artist: "Fuerza Regida" },
-  { id: "DShU-ly9BdM", title: "Macacoa 2000", artist: "Rauw Alejandro" },
-  { id: "0BxQ6hi3lXY", title: "Don't Chart", artist: "Cardi B" },
-  { id: "ULhiufAtduE", title: "Bright Lights, Big City", artist: "Keith Richards" },
-];
+const PLAYLIST = "https://soundcloud.com/atlanticrecords/sets/gtavithealbum";
 
-function pickOther(current: number) {
-  if (ALBUM.length < 2) return 0;
+function pickOther(current: number, count: number) {
+  if (count < 2) return 0;
   let next = current;
-  while (next === current) next = Math.floor(Math.random() * ALBUM.length);
+  while (next === current) next = Math.floor(Math.random() * count);
   return next;
 }
 
@@ -293,39 +280,42 @@ function Home() {
   );
 }
 
-type YtPlayer = {
-  playVideo: () => void;
-  pauseVideo: () => void;
-  mute: () => void;
-  unMute: () => void;
-  loadVideoById: (id: string) => void;
-  getPlayerState: () => number;
-  setPlaybackQuality?: (quality: string) => void;
-  setPlaybackQualityRange?: (min: string, max: string) => void;
+type Track = { id: string; title: string; artist: string };
+
+type ScSound = { id?: number; title?: string; user?: { username?: string } };
+
+type ScWidget = {
+  bind: (event: string, listener: () => void) => void;
+  play: () => void;
+  pause: () => void;
+  skip: (index: number) => void;
+  setVolume: (volume: number) => void;
+  getSounds: (callback: (sounds: ScSound[]) => void) => void;
+  isPaused: (callback: (paused: boolean) => void) => void;
 };
 
 function AlbumRadio() {
-  const { start } = Route.useLoaderData();
   const hostRef = useRef<HTMLIFrameElement>(null);
-  const playerRef = useRef<YtPlayer | null>(null);
-  const indexRef = useRef(start);
+  const widgetRef = useRef<ScWidget | null>(null);
+  const indexRef = useRef(0);
+  const tracksRef = useRef<Track[]>([]);
   const historyRef = useRef<number[]>([]);
   const startedRef = useRef(false);
-  const initialId = ALBUM[start]?.id ?? ALBUM[0].id;
-  const [index, setIndex] = useState(start);
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const track = ALBUM[index] ?? ALBUM[0];
+  const track = tracks[index];
 
   useEffect(() => {
     const unlock = () => {
-      const player = playerRef.current;
-      if (!player || startedRef.current) return;
+      const widget = widgetRef.current;
+      if (!widget || startedRef.current) return;
       startedRef.current = true;
-      player.unMute();
-      if (player.getPlayerState() !== 1) player.playVideo();
+      widget.setVolume(100);
+      widget.play();
     };
     window.addEventListener("pointerdown", unlock, true);
     return () => window.removeEventListener("pointerdown", unlock, true);
@@ -342,74 +332,75 @@ function AlbumRadio() {
 
   useEffect(() => {
     let dead = false;
-    const win = window as Window & {
-      YT?: { Player: new (el: HTMLElement, options: object) => YtPlayer };
-      onYouTubeIframeAPIReady?: () => void;
-    };
+    const win = window as Window & { SC?: { Widget: (el: HTMLIFrameElement) => ScWidget } };
 
     const mount = () => {
-      if (dead || !hostRef.current || !win.YT?.Player || playerRef.current) return;
-      playerRef.current = new win.YT.Player(hostRef.current, {
-        events: {
-          onReady: (event: { target: YtPlayer }) => {
-            setReady(true);
-            event.target.setPlaybackQualityRange?.("tiny", "tiny");
-            event.target.setPlaybackQuality?.("tiny");
-            event.target.unMute();
-            event.target.playVideo();
-            window.setTimeout(() => {
-              if (event.target.getPlayerState() === 1) {
-                startedRef.current = true;
-                return;
-              }
-              event.target.mute();
-              event.target.playVideo();
-            }, 500);
-          },
-          onStateChange: (event: { data: number }) => {
-            if (event.data === 0) {
-              const next = pickOther(indexRef.current);
-              historyRef.current.push(indexRef.current);
-              indexRef.current = next;
-              setIndex(next);
-              playerRef.current?.loadVideoById(ALBUM[next].id);
-              return;
-            }
-            setPlaying(event.data === 1 || event.data === 3);
-            if (event.data === 1) playerRef.current?.setPlaybackQualityRange?.("tiny", "tiny");
-          },
-        },
+      if (dead || !hostRef.current || !win.SC?.Widget || widgetRef.current) return;
+      const widget = win.SC.Widget(hostRef.current);
+      widgetRef.current = widget;
+      widget.bind("ready", () => {
+        widget.getSounds((sounds) => {
+          if (dead) return;
+          const list = sounds.map((sound, soundIndex) => ({
+            id: String(sound.id ?? soundIndex),
+            title: sound.title || "Untitled",
+            artist: sound.user?.username ?? "",
+          }));
+          tracksRef.current = list;
+          setTracks(list);
+          setReady(list.length > 0);
+          if (list.length === 0) return;
+          const start = Math.floor(Math.random() * list.length);
+          indexRef.current = start;
+          setIndex(start);
+          widget.setVolume(100);
+          widget.skip(start);
+          widget.play();
+        });
+      });
+      widget.bind("play", () => setPlaying(true));
+      widget.bind("pause", () => setPlaying(false));
+      widget.bind("finish", () => {
+        const count = tracksRef.current.length;
+        const next = pickOther(indexRef.current, count);
+        if (next !== indexRef.current) historyRef.current.push(indexRef.current);
+        indexRef.current = next;
+        setIndex(next);
+        widget.skip(next);
+        widget.play();
       });
     };
 
-    if (win.YT?.Player) {
+    if (win.SC?.Widget) {
       mount();
       return () => {
         dead = true;
       };
     }
 
-    const previous = win.onYouTubeIframeAPIReady;
-    win.onYouTubeIframeAPIReady = () => {
-      previous?.();
-      mount();
-    };
+    const script = document.createElement("script");
+    script.src = "https://w.soundcloud.com/player/api.js";
+    script.onload = () => mount();
+    document.head.appendChild(script);
     return () => {
       dead = true;
     };
   }, []);
 
   const toggle = () => {
-    const player = playerRef.current;
-    if (!player) return;
-    if (player.getPlayerState() === 1) {
-      player.pauseVideo();
-      setPlaying(false);
-      return;
-    }
-    player.unMute();
-    player.playVideo();
-    setPlaying(true);
+    const widget = widgetRef.current;
+    if (!widget) return;
+    widget.isPaused((paused) => {
+      if (!paused) {
+        widget.pause();
+        setPlaying(false);
+        return;
+      }
+      startedRef.current = true;
+      widget.setVolume(100);
+      widget.play();
+      setPlaying(true);
+    });
   };
 
   const playAt = (next: number) => {
@@ -417,20 +408,21 @@ function AlbumRadio() {
     indexRef.current = next;
     setIndex(next);
     setOpen(false);
-    const player = playerRef.current;
-    if (!player) return;
+    const widget = widgetRef.current;
+    if (!widget) return;
     startedRef.current = true;
-    player.unMute();
-    player.loadVideoById(ALBUM[next].id);
-    player.playVideo();
+    widget.setVolume(100);
+    widget.skip(next);
+    widget.play();
     setPlaying(true);
   };
 
   const step = (delta: number) => {
+    const count = tracksRef.current.length;
     const next =
       delta < 0 && historyRef.current.length > 0
-        ? historyRef.current.pop() ?? pickOther(indexRef.current)
-        : pickOther(indexRef.current);
+        ? historyRef.current.pop() ?? pickOther(indexRef.current, count)
+        : pickOther(indexRef.current, count);
     playAt(next);
   };
 
@@ -440,9 +432,9 @@ function AlbumRadio() {
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
           <iframe
             ref={hostRef}
-            title={track.title}
-            src={`https://www.youtube.com/embed/${initialId}?autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&enablejsapi=1&vq=tiny`}
-            allow="autoplay; encrypted-media"
+            title={track?.title ?? "GTA VI The Album"}
+            src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
+            allow="autoplay"
           />
         </div>
         <div className="relative z-10 flex items-center gap-1 px-1.5 py-1">
@@ -456,27 +448,34 @@ function AlbumRadio() {
             {playing ? <Pause className="size-4" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
           </button>
           <p className="min-w-0 flex-1 truncate text-left text-sm text-sand">
-            <span className="font-semibold">{track.title}</span>
-            <span className="text-muted"> · {track.artist}</span>
+            {track ? (
+              <>
+                <span className="font-semibold">{track.title}</span>
+                {track.artist ? <span className="text-muted"> · {track.artist}</span> : null}
+              </>
+            ) : (
+              <span className="text-muted">GTA VI The Album</span>
+            )}
           </p>
           <span className={playing ? "eq shrink-0" : "eq shrink-0 opacity-30"} aria-hidden="true">
             <i />
             <i />
             <i />
           </span>
-          <button type="button" className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset" onClick={() => step(-1)} aria-label="上一首">
+          <button type="button" className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(-1)} aria-label="上一首" disabled={!ready}>
             <SkipBack className="size-4" aria-hidden="true" />
           </button>
-          <button type="button" className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset" onClick={() => step(1)} aria-label="隨機下一首">
+          <button type="button" className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(1)} aria-label="隨機下一首" disabled={!ready}>
             <Shuffle className="size-4" aria-hidden="true" />
           </button>
           <button
             type="button"
-            className={`inline-flex size-10 shrink-0 items-center justify-center rounded-full ${open ? "bg-sunset text-ink" : "text-sand hover:text-sunset"}`}
+            className={`inline-flex size-10 shrink-0 items-center justify-center rounded-full disabled:opacity-40 ${open ? "bg-sunset text-ink" : "text-sand hover:text-sunset"}`}
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             aria-controls="album-list"
             aria-label="選擇歌曲"
+            disabled={!ready}
           >
             <ListMusic className="size-4" aria-hidden="true" />
           </button>
@@ -484,7 +483,7 @@ function AlbumRadio() {
       </div>
       {open ? (
         <ul id="album-list" className="glass song-menu absolute inset-x-0 top-full z-40 mt-2 max-h-72 overflow-y-auto rounded-2xl p-1">
-          {ALBUM.map((song, songIndex) => {
+          {tracks.map((song, songIndex) => {
             const current = songIndex === index;
             return (
               <li key={song.id}>
@@ -497,7 +496,7 @@ function AlbumRadio() {
                   <span className="w-5 shrink-0 text-center font-display text-lg leading-none text-sunset">{songIndex + 1}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-sand">{song.title}</span>
-                    <span className="block truncate text-xs text-muted">{song.artist}</span>
+                    {song.artist ? <span className="block truncate text-xs text-muted">{song.artist}</span> : null}
                   </span>
                 </button>
               </li>

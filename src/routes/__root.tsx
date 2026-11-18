@@ -23,14 +23,14 @@ export const Route = createRootRoute({
       { rel: "manifest", href: "/__grok/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },
       { rel: "preconnect", href: "https://www.youtube.com" },
-      { rel: "preconnect", href: "https://www.youtube-nocookie.com" },
+      { rel: "preconnect", href: "https://w.soundcloud.com" },
     ],
   }),
   component: () => (
     <html lang="zh-Hant" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://www.youtube.com" />
-        <script async src="https://www.youtube.com/iframe_api" />
+        <link rel="preconnect" href="https://w.soundcloud.com" />
+        <script async src="https://w.soundcloud.com/player/api.js" />
         <HeadContent />
       </head>
       <body>
