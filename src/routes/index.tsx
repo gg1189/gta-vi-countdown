@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ListMusic, Pause, Play, Shuffle, SkipBack } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ListMusic, Pause, Play, Shuffle, SkipBack, X } from "lucide-react";
 import { midnightInZone, pad, splitRemaining } from "@/lib/launch-target";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -58,14 +58,7 @@ const SHOTS = [
 function Home() {
   const [now, setNow] = useState<number | null>(null);
   const [still, setStill] = useState(0);
-  const [held, setHeld] = useState(false);
   const [clip, setClip] = useState<string | null>(null);
-  const [armed, setArmed] = useState(false);
-  const [ready, setReady] = useState(false);
-  const [videoBroken, setVideoBroken] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const heldRef = useRef(false);
-  heldRef.current = held;
 
   const remaining = now === null ? null : splitRemaining(TARGET - now);
   const secondsLeft =
@@ -92,7 +85,8 @@ function Home() {
   const heat = secondsLeft == null || secondsLeft >= 3600 ? 0 : secondsLeft <= 0 ? 1 : (3600 - secondsLeft) / 3600;
   const live = secondsLeft === 0;
   const hours = remaining ? remaining.days * 24 + remaining.hours : null;
-  const trailerOn = clip === "launch" ? ready && !videoBroken : clip !== null;
+  const trailerOn = clip !== null;
+  const active = TRAILERS.find((item) => item.id === clip) ?? null;
   const [frames, setFrames] = useState(() => [{ ...SHOTS[0], drift: false }]);
 
   useEffect(() => {
@@ -110,13 +104,6 @@ function Home() {
     img.src = upcoming.src;
   }, [still]);
 
-  const armVideo = useCallback(() => {
-    const video = videoRef.current;
-    if (!video || videoBroken) return;
-    video.muted = true;
-    void video.play().catch(() => {});
-  }, [videoBroken]);
-
   useEffect(() => {
     const tick = () => setNow(Date.now());
     tick();
@@ -125,9 +112,13 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    const id = window.setTimeout(() => setArmed(true), 1500);
-    return () => window.clearTimeout(id);
-  }, []);
+    if (!clip) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setClip(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [clip]);
 
   useEffect(() => {
     if (trailerOn) return;
@@ -137,26 +128,13 @@ function Home() {
     return () => window.clearTimeout(id);
   }, [trailerOn, still]);
 
-  useEffect(() => {
-    if (!armed) return;
-    armVideo();
-    const unlock = () => armVideo();
-    window.addEventListener("pointerdown", unlock, true);
-    return () => window.removeEventListener("pointerdown", unlock, true);
-  }, [armed, armVideo]);
-
   const pickStill = (index: number) => {
-    setHeld(true);
     setStill(index);
     setClip(null);
-    videoRef.current?.pause();
   };
 
   const pickClip = (id: string) => {
-    setHeld(true);
     setClip(id);
-    if (id === "launch") armVideo();
-    else videoRef.current?.pause();
   };
 
   return (
@@ -168,41 +146,11 @@ function Home() {
             src={item.src}
             alt={item.alt}
             enter={index > 0}
-            hide={trailerOn}
+            hide={false}
             drift={item.drift}
             priority={index === frames.length - 1}
-            onLoad={index === frames.length - 1 ? () => setArmed(true) : undefined}
           />
         ))}
-        {armed && !videoBroken && (
-          <video
-            ref={videoRef}
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${clip === "launch" && trailerOn ? "opacity-100" : "opacity-0"}`}
-            src={TRAILER}
-            poster="/shots/key.jpg"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            onCanPlay={() => {
-              setReady(true);
-              if (!heldRef.current) setClip("launch");
-            }}
-            onError={() => setVideoBroken(true)}
-          />
-        )}
-        {clip && clip !== "launch"
-          ? TRAILERS.filter((item) => item.id === clip && item.yt).map((item) => (
-              <iframe
-                key={item.id}
-                title={item.label}
-                className="pointer-events-none absolute top-1/2 left-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 border-0"
-                src={`https://www.youtube-nocookie.com/embed/${item.yt}?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&loop=1&playlist=${item.yt}&disablekb=1&iv_load_policy=3`}
-                allow="autoplay; encrypted-media"
-              />
-            ))
-          : null}
       </div>
 
       <div className="neon-wash pointer-events-none fixed inset-0 z-[1]" style={{ opacity: heat }} />
@@ -253,9 +201,10 @@ function Home() {
               aria-label={item.label}
               aria-pressed={clip === item.id}
               onClick={() => pickClip(item.id)}
-              className={`shrink-0 overflow-hidden rounded-card border-2 ${clip === item.id ? "border-sunset" : "border-line"}`}
+              className={`relative shrink-0 overflow-hidden rounded-card border-2 ${clip === item.id ? "border-sunset" : "border-line"}`}
             >
               <img src={item.thumb} alt="" className="h-16 w-28 object-cover sm:h-20 sm:w-36" />
+              <span className="absolute inset-x-0 bottom-0 bg-ink/70 py-0.5 text-[10px] font-semibold tracking-widest text-sand">{item.label}</span>
             </button>
           ))}
           {SHOTS.map((item, index) => (
@@ -272,6 +221,43 @@ function Home() {
           ))}
         </div>
       </section>
+
+      {active ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={active.label} onClick={() => setClip(null)}>
+          <div className="glass w-full max-w-4xl overflow-hidden rounded-card" onClick={(event) => event.stopPropagation()}>
+            <div className="relative aspect-video bg-black">
+              {active.yt ? (
+                <iframe
+                  key={active.id}
+                  title={active.label}
+                  className="absolute inset-0 h-full w-full border-0"
+                  src={`https://www.youtube-nocookie.com/embed/${active.yt}?autoplay=1&controls=1&modestbranding=1&playsinline=1&rel=0`}
+                  allow="autoplay; encrypted-media; fullscreen"
+                  allowFullScreen
+                />
+              ) : (
+                <video key={active.id} className="absolute inset-0 h-full w-full" src={TRAILER} poster={active.thumb} autoPlay controls playsInline />
+              )}
+              <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-1.5 bg-gradient-to-b from-black/70 to-transparent p-2">
+                {TRAILERS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={item.id === active.id}
+                    onClick={() => pickClip(item.id)}
+                    className={`min-h-9 rounded-full px-3 text-xs font-semibold tracking-widest ${item.id === active.id ? "bg-sunset text-ink" : "bg-white/15 text-sand"}`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+                <button type="button" className="ml-auto inline-flex size-9 items-center justify-center rounded-full bg-white/15 text-sand" onClick={() => setClip(null)} aria-label="關閉">
+                  <X className="size-4" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <Fireworks level={fireworkLevel} />
     </main>
