@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { ListMusic, Maximize2, Pause, Play, Shuffle, SkipBack, X } from "lucide-react";
 import { midnightInZone, pad, splitRemaining } from "@/lib/launch-target";
 
@@ -15,16 +15,16 @@ const TRAILERS = [
 
 const PLAYLIST = "https://soundcloud.com/atlanticrecords/sets/gtavithealbum";
 const TRACKS: Track[] = [
-  { id: "thats-it", title: "That's It", artist: "Yung Lean" },
-  { id: "rhyno", title: "RHYNO", artist: "Travis Scott" },
-  { id: "sexy-magic", title: "Sexy Magic", artist: "CA7RIEL & Paco Amoroso" },
-  { id: "flower", title: "Flower In A Hurricane", artist: "Justice" },
-  { id: "last-thing", title: "Last Thing You Need", artist: "Morgan Wallen" },
-  { id: "suzuki", title: "Suzuki", artist: "Fuerza Regida" },
-  { id: "macacoa", title: "Macacoa 2000", artist: "Rauw Alejandro" },
-  { id: "dont-chart", title: "Don't Chart", artist: "Cardi B" },
-  { id: "blood", title: "Blood in Your Eyes", artist: "Tove Lo" },
-  { id: "bright-lights", title: "Bright Lights, Big City", artist: "Keith Richards" },
+  { id: "thats-it", title: "That's It", artist: "Yung Lean", art: "/covers/album.jpg" },
+  { id: "rhyno", title: "RHYNO", artist: "Travis Scott", art: "/covers/album.jpg" },
+  { id: "sexy-magic", title: "Sexy Magic", artist: "CA7RIEL & Paco Amoroso", art: "/covers/album.jpg" },
+  { id: "flower", title: "Flower In A Hurricane", artist: "Justice", art: "/covers/flower.jpg" },
+  { id: "last-thing", title: "Last Thing You Need", artist: "Morgan Wallen", art: "/covers/album.jpg" },
+  { id: "suzuki", title: "Suzuki", artist: "Fuerza Regida", art: "/covers/album.jpg" },
+  { id: "macacoa", title: "Macacoa 2000", artist: "Rauw Alejandro", art: "/covers/album.jpg" },
+  { id: "dont-chart", title: "Don't Chart", artist: "Cardi B", art: "/covers/album.jpg" },
+  { id: "blood", title: "Blood in Your Eyes", artist: "Tove Lo", art: "/covers/album.jpg" },
+  { id: "bright-lights", title: "Bright Lights, Big City", artist: "Keith Richards", art: "/covers/album.jpg" },
 ];
 
 function pickOther(current: number, count: number) {
@@ -177,12 +177,12 @@ function Home() {
 
         <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 px-3 py-3 sm:px-6">
           <img src="/logo-vi.png" alt="VI" className="h-8 w-auto" />
-          <div className="w-[min(22rem,calc(100%-3.25rem))]">
+          <div className="w-[min(24rem,calc(100%-2.75rem))]">
             <AlbumRadio />
           </div>
         </header>
 
-        <div className="relative z-10 mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center px-4 pt-20 pb-28 text-center">
+        <div className="relative z-10 mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center px-4 pt-36 pb-28 text-center">
           <p className="text-xs font-semibold tracking-widest text-sunset">GRAND THEFT AUTO VI</p>
           <h1 key={copy.title} className="cheer mt-2 font-sans text-4xl font-bold tracking-tight text-sand sm:text-6xl">
             {copy.title}
@@ -292,14 +292,17 @@ function Home() {
   );
 }
 
-type Track = { id: string; title: string; artist: string };
+type Track = { id: string; title: string; artist: string; art: string };
 
 type ScWidget = {
-  bind: (event: string, listener: () => void) => void;
+  bind: (event: string, listener: (data?: { currentPosition?: number }) => void) => void;
   play: () => void;
   pause: () => void;
   skip: (index: number) => void;
+  seekTo: (ms: number) => void;
   setVolume: (volume: number) => void;
+  getDuration: (callback: (ms: number) => void) => void;
+  getPosition: (callback: (ms: number) => void) => void;
   isPaused: (callback: (paused: boolean) => void) => void;
 };
 
@@ -314,6 +317,9 @@ function AlbumRadio() {
   const [playing, setPlaying] = useState(false);
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const durationRef = useRef(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const track = TRACKS[index] ?? TRACKS[0];
 
@@ -362,10 +368,19 @@ function AlbumRadio() {
       widget.bind("play", () => {
         window.clearInterval(retry);
         setPlaying(true);
+        widget.getDuration((ms) => {
+          durationRef.current = ms;
+          setDuration(ms);
+        });
         if (jumpedRef.current) return;
         jumpedRef.current = true;
         const start = indexRef.current;
         if (start !== 0) widget.skip(start);
+      });
+      widget.bind("playProgress", (data) => {
+        const apply = (pos: number) => setProgress((prev) => (Math.abs(prev - pos) < 200 ? prev : pos));
+        if (typeof data?.currentPosition === "number") apply(data.currentPosition);
+        else widget.getPosition(apply);
       });
       widget.bind("pause", () => setPlaying(false));
       widget.bind("finish", () => {
@@ -373,6 +388,7 @@ function AlbumRadio() {
         if (next !== indexRef.current) historyRef.current.push(indexRef.current);
         indexRef.current = next;
         setIndex(next);
+        setProgress(0);
         widget.skip(next);
         widget.play();
       });
@@ -424,6 +440,7 @@ function AlbumRadio() {
     if (next !== indexRef.current) historyRef.current.push(indexRef.current);
     indexRef.current = next;
     setIndex(next);
+    setProgress(0);
     setOpen(false);
     const widget = widgetRef.current;
     if (!widget) return;
@@ -443,17 +460,33 @@ function AlbumRadio() {
     playAt(next);
   };
 
+  const seek = (event: MouseEvent<HTMLButtonElement>) => {
+    const widget = widgetRef.current;
+    const total = durationRef.current;
+    if (!widget || total <= 0) return;
+    const bar = event.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (event.clientX - bar.left) / bar.width));
+    const ms = Math.floor(total * ratio);
+    widget.seekTo(ms);
+    setProgress(ms);
+  };
+
+  const ratio = duration > 0 ? Math.min(100, (progress / duration) * 100) : 0;
+
   return (
     <div ref={rootRef} className="relative min-w-0">
-      <iframe
-        ref={hostRef}
-        className="sc-hide"
-        title="GTA VI The Album"
-        src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
-        allow="autoplay"
-      />
-      <div className="glass relative overflow-hidden rounded-full">
-        <div className="relative z-10 flex items-center gap-1 px-1.5 py-1">
+      <div className="sc-hide" aria-hidden="true">
+        <iframe
+          ref={hostRef}
+          title="GTA VI The Album"
+          className="h-20 w-40 border-0"
+          src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
+          allow="autoplay"
+        />
+      </div>
+      <div className="glass relative overflow-hidden rounded-[1.4rem]">
+        <div className="relative z-10 flex items-center gap-2 px-2 pt-2">
+          <img src={track.art} alt="" className="size-11 shrink-0 rounded-xl object-cover" />
           <button
             type="button"
             className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-sunset text-ink disabled:opacity-40"
@@ -463,17 +496,16 @@ function AlbumRadio() {
           >
             {playing ? <Pause className="size-4" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
           </button>
-          <p className="min-w-0 flex-1 truncate text-left text-sm text-sand">
-            {track ? (
-              <>
-                <span className="font-semibold">{track.title}</span>
-                {track.artist ? <span className="text-muted"> · {track.artist}</span> : null}
-              </>
-            ) : (
-              <span className="text-muted">GTA VI The Album</span>
-            )}
-          </p>
-          <span className={playing ? "eq shrink-0" : "eq shrink-0 opacity-30"} aria-hidden="true">
+          <div className="min-w-0 flex-1 text-left">
+            <Marquee text={track.title} />
+            <p className="flex items-baseline justify-between gap-2 text-[11px] text-muted">
+              <span className="truncate">{track.artist}</span>
+              <span className="shrink-0 tabular-nums">{fmt(progress)} / {fmt(duration)}</span>
+            </p>
+          </div>
+        </div>
+        <div className="relative z-10 flex items-center gap-0.5 px-1.5 pt-1">
+          <span className={playing ? "eq ml-1 shrink-0" : "eq ml-1 shrink-0 opacity-30"} aria-hidden="true">
             <i />
             <i />
             <i />
@@ -486,7 +518,7 @@ function AlbumRadio() {
           </button>
           <button
             type="button"
-            className={`inline-flex size-10 shrink-0 items-center justify-center rounded-full disabled:opacity-40 ${open ? "bg-sunset text-ink" : "text-sand hover:text-sunset"}`}
+            className={`ml-auto inline-flex size-10 shrink-0 items-center justify-center rounded-full disabled:opacity-40 ${open ? "bg-sunset text-ink" : "text-sand hover:text-sunset"}`}
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             aria-controls="album-list"
@@ -496,23 +528,27 @@ function AlbumRadio() {
             <ListMusic className="size-4" aria-hidden="true" />
           </button>
         </div>
+        <button type="button" className="relative z-10 mx-3 mt-1 mb-2 block h-1 w-[calc(100%-1.5rem)] rounded-full bg-white/15" onClick={seek} aria-label="播放進度">
+          <span className="absolute inset-y-0 left-0 rounded-full bg-sunset" style={{ width: `${ratio}%` }} />
+        </button>
       </div>
       {open ? (
-        <ul id="album-list" className="glass song-menu absolute inset-x-0 top-full z-40 mt-2 max-h-72 overflow-y-auto rounded-2xl p-1">
+        <ul id="album-list" className="glass song-menu absolute inset-x-0 top-full z-40 mt-2 max-h-80 overflow-y-auto rounded-2xl p-1">
           {TRACKS.map((song, songIndex) => {
             const current = songIndex === index;
             return (
               <li key={song.id}>
                 <button
                   type="button"
-                  className={`relative z-10 flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left ${current ? "bg-sunset/20" : "hover:bg-white/10"}`}
+                  className={`relative z-10 flex min-h-11 w-full items-center gap-2.5 rounded-xl px-2 text-left ${current ? "bg-sunset/20" : "hover:bg-white/10"}`}
                   aria-current={current ? "true" : undefined}
                   onClick={() => playAt(songIndex)}
                 >
+                  <img src={song.art} alt="" className="size-10 shrink-0 rounded-lg object-cover" />
                   <span className="w-5 shrink-0 text-center font-display text-lg leading-none text-sunset">{songIndex + 1}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-sand">{song.title}</span>
-                    {song.artist ? <span className="block truncate text-xs text-muted">{song.artist}</span> : null}
+                    <span className="block truncate text-xs text-muted">{song.artist}</span>
                   </span>
                 </button>
               </li>
@@ -521,6 +557,37 @@ function AlbumRadio() {
         </ul>
       ) : null}
     </div>
+  );
+}
+
+function fmt(ms: number) {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function Marquee({ text }: { text: string }) {
+  const boxRef = useRef<HTMLSpanElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [shift, setShift] = useState(0);
+
+  useEffect(() => {
+    const box = boxRef.current;
+    const label = textRef.current;
+    if (!box || !label) return;
+    const extra = label.scrollWidth - box.clientWidth;
+    setShift(extra > 4 ? extra + 16 : 0);
+  }, [text]);
+
+  return (
+    <span ref={boxRef} className="block overflow-hidden whitespace-nowrap">
+      <span
+        ref={textRef}
+        className="inline-block text-sm font-semibold text-sand"
+        style={shift ? ({ "--shift": `${shift}px`, animation: "ticker 8s linear infinite" } as CSSProperties) : undefined}
+      >
+        {text}
+      </span>
+    </span>
   );
 }
 

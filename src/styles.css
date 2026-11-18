@@ -325,14 +325,36 @@
   filter: blur(6px);
 }
 
+.song-menu.glass {
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.28);
+}
+
+.song-menu.glass::before,
+.song-menu.glass::after {
+  content: none;
+}
+
 .sc-hide {
   position: fixed;
-  right: 0;
   bottom: 0;
-  width: 160px;
-  height: 80px;
+  left: 0;
+  width: 180px;
+  height: 90px;
+  overflow: hidden;
   opacity: 0;
   pointer-events: none;
+  transform: translateZ(0);
+}
+
+@keyframes ticker {
+  0%,
+  12% {
+    transform: translateX(0);
+  }
+  82%,
+  100% {
+    transform: translateX(calc(-1 * var(--shift)));
+  }
 }
 
 .colon {
