@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
-import { ListMusic, Maximize2, Pause, Play, Shuffle, SkipBack, X } from "lucide-react";
+import { ChevronDown, ListMusic, Maximize2, Pause, Play, Shuffle, SkipBack, SkipForward, X } from "lucide-react";
 import { midnightInZone, pad, splitRemaining } from "@/lib/launch-target";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -62,6 +62,8 @@ function Home() {
   const [still, setStill] = useState(0);
   const [clip, setClip] = useState<string | null>(null);
   const [modal, setModal] = useState(false);
+  const ytRef = useRef<HTMLIFrameElement>(null);
+  const ytEmbed = useRef<string | null>(null);
 
   const remaining = now === null ? null : splitRemaining(TARGET - now);
   const secondsLeft =
@@ -117,7 +119,7 @@ function Home() {
   useEffect(() => {
     if (!modal) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setModal(false);
+      if (event.key === "Escape") closeModal();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -132,15 +134,38 @@ function Home() {
   }, [trailerOn, still]);
 
   const pickStill = (index: number) => {
+    ytEmbed.current = null;
     setStill(index);
     setClip(null);
     setModal(false);
   };
 
+  const commandTrailer = (func: string, args: unknown[] = []) => {
+    ytRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: "command", func, args }),
+      "https://www.youtube-nocookie.com",
+    );
+  };
+
   const pickClip = (id: string, intoModal = false) => {
     setClip(id);
     setModal(intoModal);
+    const next = TRAILERS.find((item) => item.id === id);
+    if (intoModal && next?.yt) commandTrailer("loadVideoById", [next.yt]);
   };
+
+  const openModal = () => {
+    commandTrailer("playVideo");
+    commandTrailer("unMute");
+    setModal(true);
+  };
+
+  const closeModal = () => {
+    commandTrailer("mute");
+    setModal(false);
+  };
+
+  if (active?.yt && !ytEmbed.current) ytEmbed.current = active.yt;
 
   return (
     <main className="bg-ink text-sand">
@@ -159,16 +184,25 @@ function Home() {
         {active && !modal && !active.yt ? (
           <video className="absolute inset-0 h-full w-full object-cover" src={TRAILER} poster={active.thumb} autoPlay muted loop playsInline />
         ) : null}
-        {active && !modal && active.yt ? (
-          <iframe
-            key={active.id}
-            title={active.label}
-            className="pointer-events-none absolute top-1/2 left-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 border-0"
-            src={`https://www.youtube-nocookie.com/embed/${active.yt}?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&loop=1&playlist=${active.yt}&disablekb=1&iv_load_policy=3`}
-            allow="autoplay; encrypted-media"
-          />
-        ) : null}
       </div>
+
+      {active?.yt && ytEmbed.current ? (
+        <div className={modal ? "pointer-events-auto fixed top-1/2 left-1/2 z-[55] aspect-video w-[min(56rem,calc(100%-1.5rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-card" : "pointer-events-none fixed inset-0 z-0 overflow-hidden"}>
+          <iframe
+            ref={ytRef}
+            title={active.label}
+            className={modal ? "h-full w-full border-0" : "pointer-events-none absolute top-1/2 left-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 border-0"}
+            src={`https://www.youtube-nocookie.com/embed/${ytEmbed.current}?autoplay=1&mute=1&enablejsapi=1&controls=1&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3`}
+            allow="autoplay; encrypted-media; fullscreen"
+            allowFullScreen
+            onLoad={() => {
+              if (!modal) return;
+              commandTrailer("playVideo");
+              commandTrailer("unMute");
+            }}
+          />
+        </div>
+      ) : null}
 
       <div className="neon-wash pointer-events-none fixed inset-0 z-[1]" style={{ opacity: heat }} />
 
@@ -177,12 +211,12 @@ function Home() {
 
         <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 px-3 py-3 sm:px-6">
           <img src="/logo-vi.png" alt="VI" className="h-8 w-auto" />
-          <div className="w-[min(24rem,calc(100%-2.75rem))]">
+          <div className="ml-auto w-[min(24rem,calc(100%-2.75rem))]">
             <AlbumRadio />
           </div>
         </header>
 
-        <div className="relative z-10 mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center px-4 pt-36 pb-28 text-center">
+        <div className="relative z-10 mx-auto flex min-h-dvh max-w-4xl flex-col items-center justify-center px-4 pt-28 pb-28 text-center">
           <p className="text-xs font-semibold tracking-widest text-sunset">GRAND THEFT AUTO VI</p>
           <h1 key={copy.title} className="cheer mt-2 font-sans text-4xl font-bold tracking-tight text-sand sm:text-6xl">
             {copy.title}
@@ -214,7 +248,7 @@ function Home() {
           <button
             type="button"
             className="glass absolute bottom-28 right-4 z-20 inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-sand"
-            onClick={() => setModal(true)}
+            onClick={openModal}
           >
             <Maximize2 className="size-4" aria-hidden="true" />
             放大
@@ -251,22 +285,13 @@ function Home() {
       </section>
 
       {active && modal ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={active.label} onClick={() => setModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3" role="dialog" aria-modal="true" aria-label={active.label} onClick={closeModal}>
           <div className="glass w-full max-w-4xl overflow-hidden rounded-card" onClick={(event) => event.stopPropagation()}>
             <div className="relative aspect-video bg-black">
-              {active.yt ? (
-                <iframe
-                  key={active.id}
-                  title={active.label}
-                  className="absolute inset-0 h-full w-full border-0"
-                  src={`https://www.youtube-nocookie.com/embed/${active.yt}?autoplay=1&controls=1&modestbranding=1&playsinline=1&rel=0`}
-                  allow="autoplay; encrypted-media; fullscreen"
-                  allowFullScreen
-                />
-              ) : (
+              {active.yt ? null : (
                 <video key={active.id} className="absolute inset-0 h-full w-full" src={TRAILER} poster={active.thumb} autoPlay controls playsInline />
               )}
-              <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-1.5 bg-gradient-to-b from-black/70 to-transparent p-2">
+              <div className="absolute inset-x-0 top-0 z-[70] flex items-center gap-1.5 bg-gradient-to-b from-black/70 to-transparent p-2">
                 {TRAILERS.map((item) => (
                   <button
                     key={item.id}
@@ -278,7 +303,7 @@ function Home() {
                     {item.label}
                   </button>
                 ))}
-                <button type="button" className="ml-auto inline-flex size-9 items-center justify-center rounded-full bg-white/15 text-sand" onClick={() => setModal(false)} aria-label="關閉">
+                <button type="button" className="ml-auto inline-flex size-9 items-center justify-center rounded-full bg-white/15 text-sand" onClick={closeModal} aria-label="關閉">
                   <X className="size-4" aria-hidden="true" />
                 </button>
               </div>
@@ -316,6 +341,8 @@ function AlbumRadio() {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState(false);
+  const [pinned, setPinned] = useState(false);
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -342,13 +369,15 @@ function AlbumRadio() {
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open && !pinned) return;
     const close = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (rootRef.current?.contains(event.target as Node)) return;
+      setOpen(false);
+      setPinned(false);
     };
     window.addEventListener("pointerdown", close);
     return () => window.removeEventListener("pointerdown", close);
-  }, [open]);
+  }, [open, pinned]);
 
   useEffect(() => {
     let dead = false;
@@ -453,12 +482,15 @@ function AlbumRadio() {
 
   const step = (delta: number) => {
     const count = TRACKS.length;
-    const next =
-      delta < 0 && historyRef.current.length > 0
-        ? historyRef.current.pop() ?? pickOther(indexRef.current, count)
-        : pickOther(indexRef.current, count);
+    const next = delta < 0
+      ? historyRef.current.length > 0
+        ? historyRef.current.pop() ?? (indexRef.current - 1 + count) % count
+        : (indexRef.current - 1 + count) % count
+      : (indexRef.current + 1) % count;
     playAt(next);
   };
+
+  const shuffle = () => playAt(pickOther(indexRef.current, TRACKS.length));
 
   const seek = (event: MouseEvent<HTMLButtonElement>) => {
     const widget = widgetRef.current;
@@ -472,9 +504,18 @@ function AlbumRadio() {
   };
 
   const ratio = duration > 0 ? Math.min(100, (progress / duration) * 100) : 0;
+  const expanded = hover || pinned || open;
 
   return (
-    <div ref={rootRef} className="relative min-w-0">
+    <div
+      ref={rootRef}
+      className={`relative ml-auto min-w-0 transition-[width] duration-300 ${expanded ? "w-full" : "w-[min(15rem,100%)]"}`}
+      onPointerEnter={(event) => {
+        setHover(true);
+        if (event.pointerType === "touch") setPinned(true);
+      }}
+      onPointerLeave={() => setHover(false)}
+    >
       <div className="sc-hide" aria-hidden="true">
         <iframe
           ref={hostRef}
@@ -485,40 +526,29 @@ function AlbumRadio() {
         />
       </div>
       <div className="glass relative overflow-hidden rounded-[1.4rem]">
-        <div className="relative z-10 flex items-center gap-2 px-2 pt-2">
-          <img src={track.art} alt="" className="size-11 shrink-0 rounded-xl object-cover" />
-          <button
-            type="button"
-            className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-sunset text-ink disabled:opacity-40"
-            onClick={toggle}
-            disabled={!ready}
-            aria-label={playing ? "暫停" : "播放"}
-          >
-            {playing ? <Pause className="size-4" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
-          </button>
+        <div className="relative z-10 flex items-center gap-2 px-1.5 py-1.5">
+          <img src={track.art} alt="" className="size-9 shrink-0 rounded-lg object-cover" />
           <div className="min-w-0 flex-1 text-left">
             <Marquee text={track.title} />
-            <p className="flex items-baseline justify-between gap-2 text-[11px] text-muted">
-              <span className="truncate">{track.artist}</span>
-              <span className="shrink-0 tabular-nums">{fmt(progress)} / {fmt(duration)}</span>
-            </p>
+            {expanded ? (
+              <p className="flex items-baseline justify-between gap-2 text-[11px] text-muted">
+                <span className="truncate">{track.artist}</span>
+                <span className="shrink-0 tabular-nums">{fmt(progress)} / {fmt(duration)}</span>
+              </p>
+            ) : null}
           </div>
-        </div>
-        <div className="relative z-10 flex items-center gap-0.5 px-1.5 pt-1">
-          <span className={playing ? "eq ml-1 shrink-0" : "eq ml-1 shrink-0 opacity-30"} aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-          <button type="button" className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(-1)} aria-label="上一首" disabled={!ready}>
-            <SkipBack className="size-4" aria-hidden="true" />
-          </button>
-          <button type="button" className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(1)} aria-label="隨機下一首" disabled={!ready}>
-            <Shuffle className="size-4" aria-hidden="true" />
+          <button
+            type="button"
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-sand hover:text-sunset"
+            onClick={() => setPinned((value) => !value)}
+            aria-expanded={expanded}
+            aria-label={expanded ? "收起" : "展開"}
+          >
+            <ChevronDown className={`size-4 transition-transform ${expanded ? "rotate-180" : ""}`} aria-hidden="true" />
           </button>
           <button
             type="button"
-            className={`ml-auto inline-flex size-10 shrink-0 items-center justify-center rounded-full disabled:opacity-40 ${open ? "bg-sunset text-ink" : "text-sand hover:text-sunset"}`}
+            className={`inline-flex size-9 shrink-0 items-center justify-center rounded-full disabled:opacity-40 ${open ? "bg-sunset text-ink" : "text-sand hover:text-sunset"}`}
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             aria-controls="album-list"
@@ -528,9 +558,38 @@ function AlbumRadio() {
             <ListMusic className="size-4" aria-hidden="true" />
           </button>
         </div>
-        <button type="button" className="relative z-10 mx-3 mt-1 mb-2 block h-1 w-[calc(100%-1.5rem)] rounded-full bg-white/15" onClick={seek} aria-label="播放進度">
-          <span className="absolute inset-y-0 left-0 rounded-full bg-sunset" style={{ width: `${ratio}%` }} />
-        </button>
+        <div className={`grid transition-[grid-template-rows] duration-300 ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+          <div className="overflow-hidden">
+            <div className="relative z-10 flex items-center justify-center gap-1 px-2">
+              <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={shuffle} aria-label="隨機" disabled={!ready}>
+                <Shuffle className="size-4" aria-hidden="true" />
+              </button>
+              <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(-1)} aria-label="上一首" disabled={!ready}>
+                <SkipBack className="size-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="inline-flex size-12 items-center justify-center rounded-full bg-sunset text-ink disabled:opacity-40"
+                onClick={toggle}
+                disabled={!ready}
+                aria-label={playing ? "暫停" : "播放"}
+              >
+                {playing ? <Pause className="size-5" aria-hidden="true" /> : <Play className="size-5" aria-hidden="true" />}
+              </button>
+              <button type="button" className="inline-flex size-10 items-center justify-center rounded-full text-sand hover:text-sunset disabled:opacity-40" onClick={() => step(1)} aria-label="下一首" disabled={!ready}>
+                <SkipForward className="size-4" aria-hidden="true" />
+              </button>
+              <span className={playing ? "eq shrink-0" : "eq shrink-0 opacity-30"} aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+            <button type="button" className="relative z-10 mx-3 mt-1 mb-2 block h-1 w-[calc(100%-1.5rem)] rounded-full bg-white/15" onClick={seek} aria-label="播放進度">
+              <span className="absolute inset-y-0 left-0 rounded-full bg-sunset" style={{ width: `${ratio}%` }} />
+            </button>
+          </div>
+        </div>
       </div>
       {open ? (
         <ul id="album-list" className="glass song-menu absolute inset-x-0 top-full z-40 mt-2 max-h-80 overflow-y-auto rounded-2xl p-1">
