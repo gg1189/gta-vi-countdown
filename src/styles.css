@@ -336,13 +336,13 @@
 
 .sc-hide {
   position: fixed;
-  bottom: 0;
+  top: 0;
   left: 0;
-  width: 180px;
-  height: 80px;
-  overflow: hidden;
-  opacity: 0.02;
+  z-index: -1;
+  width: 400px;
+  height: 166px;
   pointer-events: none;
+  opacity: 0.01;
 }
 
 @keyframes ticker {

@@ -362,6 +362,7 @@ function AlbumRadio({ start }: { start: number }) {
   const indexRef = useRef(start);
   const historyRef = useRef<number[]>([]);
   const startedRef = useRef(false);
+  const playingRef = useRef(false);
   const [index, setIndex] = useState(start);
   const [playing, setPlaying] = useState(false);
   const [open, setOpen] = useState(false);
@@ -375,10 +376,11 @@ function AlbumRadio({ start }: { start: number }) {
   const track = TRACKS[index] ?? TRACKS[0];
 
   useEffect(() => {
-    const unlock = () => {
+    const unlock = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest("[data-playback]")) return;
       const widget = widgetRef.current;
       if (!widget || startedRef.current) return;
-      startedRef.current = true;
       widget.setVolume(100);
       widget.play();
     };
@@ -414,6 +416,8 @@ function AlbumRadio({ start }: { start: number }) {
       });
       widget.bind("play", () => {
         window.clearInterval(retry);
+        startedRef.current = true;
+        playingRef.current = true;
         setPlaying(true);
         widget.getDuration((ms) => {
           durationRef.current = ms;
@@ -425,7 +429,10 @@ function AlbumRadio({ start }: { start: number }) {
         if (typeof data?.currentPosition === "number") apply(data.currentPosition);
         else widget.getPosition(apply);
       });
-      widget.bind("pause", () => setPlaying(false));
+      widget.bind("pause", () => {
+        playingRef.current = false;
+        setPlaying(false);
+      });
       widget.bind("finish", () => {
         const next = pickOther(indexRef.current, TRACKS.length);
         if (next !== indexRef.current) historyRef.current.push(indexRef.current);
@@ -466,17 +473,14 @@ function AlbumRadio({ start }: { start: number }) {
   const toggle = () => {
     const widget = widgetRef.current;
     if (!widget) return;
-    widget.isPaused((paused) => {
-      if (!paused) {
-        widget.pause();
-        setPlaying(false);
-        return;
-      }
-      startedRef.current = true;
-      widget.setVolume(100);
-      widget.play();
-      setPlaying(true);
-    });
+    if (playingRef.current) {
+      widget.pause();
+      playingRef.current = false;
+      setPlaying(false);
+      return;
+    }
+    widget.setVolume(100);
+    widget.play();
   };
 
   const playAt = (next: number) => {
@@ -535,9 +539,9 @@ function AlbumRadio({ start }: { start: number }) {
         <iframe
           ref={hostRef}
           title="GTA VI The Album"
-          className="h-20 w-40 border-0"
+          className="h-[166px] w-[400px] border-0"
           src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(PLAYLIST)}&auto_play=true&start_track=${start}&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false`}
-          allow="autoplay"
+          allow="autoplay; encrypted-media"
         />
       </div>
       <div className="glass relative overflow-hidden rounded-[1.4rem]">
@@ -545,6 +549,7 @@ function AlbumRadio({ start }: { start: number }) {
           <button
             type="button"
             className="group relative size-10 shrink-0 overflow-hidden rounded-lg disabled:opacity-40"
+            data-playback="toggle"
             onClick={toggle}
             disabled={!ready}
             aria-label={playing ? "暫停" : "播放"}
@@ -615,6 +620,7 @@ function AlbumRadio({ start }: { start: number }) {
                 <button
                   type="button"
                   className="inline-flex size-12 items-center justify-center rounded-full bg-sunset text-ink shadow-[0_8px_20px_rgb(255_107_61_/_0.35)] disabled:opacity-40"
+                  data-playback="toggle"
                   onClick={toggle}
                   disabled={!ready}
                   aria-label={playing ? "暫停" : "播放"}
