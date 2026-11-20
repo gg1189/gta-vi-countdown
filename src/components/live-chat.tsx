@@ -83,7 +83,7 @@ export function LiveChat() {
     return (
       <button
         type="button"
-        className="glass absolute bottom-36 left-4 z-30 inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-sand sm:bottom-32"
+        className="absolute bottom-36 left-4 z-40 inline-flex min-h-11 items-center gap-2 rounded-full bg-sunset px-4 text-sm font-semibold text-ink shadow-[0_8px_24px_rgb(255_107_61_/_0.45)] sm:bottom-32"
         onClick={() => setOpen(true)}
       >
         <MessageCircle className="size-4" aria-hidden="true" />
