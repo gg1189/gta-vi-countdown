@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type RefObject } from "react";
 import { ChevronDown, ListMusic, Maximize2, Pause, Play, Shuffle, SkipBack, SkipForward, Volume1, Volume2, VolumeX, X } from "lucide-react";
 import { midnightInZone, pad, splitRemaining } from "@/lib/launch-target";
+import { LiveChat } from "@/components/live-chat";
 
 export const Route = createFileRoute("/")({
   loader: () => ({ start: Math.floor(Math.random() * TRACKS.length) }),
@@ -266,6 +267,8 @@ function Home() {
             放大
           </button>
         ) : null}
+
+        <LiveChat />
 
         <div className="absolute inset-x-0 bottom-0 z-20 flex gap-2 overflow-x-auto px-4 pb-4">
           {TRAILERS.map((item) => (
