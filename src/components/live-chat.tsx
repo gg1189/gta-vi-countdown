@@ -83,7 +83,7 @@ export function LiveChat() {
     return (
       <button
         type="button"
-        className="absolute bottom-36 left-4 z-40 inline-flex min-h-11 items-center gap-2 rounded-full bg-sunset px-4 text-sm font-semibold text-ink shadow-[0_8px_24px_rgb(255_107_61_/_0.45)] sm:bottom-32"
+        className="fixed top-24 left-4 z-40 inline-flex min-h-11 items-center gap-2 rounded-full bg-sunset px-4 text-sm font-semibold text-ink shadow-[0_8px_24px_rgb(255_107_61_/_0.45)]"
         onClick={() => setOpen(true)}
       >
         <MessageCircle className="size-4" aria-hidden="true" />
@@ -93,7 +93,7 @@ export function LiveChat() {
   }
 
   return (
-    <section className="glass absolute bottom-36 left-4 z-30 flex w-[min(22rem,calc(100%-2rem))] flex-col overflow-hidden rounded-2xl sm:bottom-32">
+    <section className="glass fixed top-24 left-4 z-40 flex h-[min(24rem,calc(100dvh-8rem))] w-[min(22rem,calc(100%-2rem))] flex-col overflow-hidden rounded-2xl">
       <header className="relative z-10 flex items-center gap-2 px-3 py-2">
         <MessageCircle className="size-4 text-sunset" aria-hidden="true" />
         <h2 className="text-sm font-semibold text-sand">傾計</h2>
@@ -104,7 +104,7 @@ export function LiveChat() {
       </header>
       <div
         ref={listRef}
-        className="relative z-10 h-64 space-y-2 overflow-y-auto px-3"
+        className="relative z-10 min-h-0 flex-1 space-y-2 overflow-y-auto px-3"
         onScroll={(event) => {
           const node = event.currentTarget;
           stick.current = node.scrollHeight - node.scrollTop - node.clientHeight < 48;
